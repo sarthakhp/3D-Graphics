@@ -297,7 +297,10 @@ void recalculate()
 
 	for (int obji = 0; obji < objs.size(); obji++)
 	{
+		long long t1 = SDL_GetTicks64();
 		process_projection(objs[obji], obji);
+		long long t2 = SDL_GetTicks64();
+		cout << "TIME : " << (t1 - t2) / 1000 << endl;
 	}
 }
 
