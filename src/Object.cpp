@@ -52,6 +52,8 @@ Object newCube()
     cube.points = p;
     // vertexArray = {0, 1, 2, 2, 1, 4}
 
+    // new line ^ ^
+
     cube.edges.push_back({0, 1});
     cube.edges.push_back({1, 2});
     cube.edges.push_back({2, 3});
