@@ -53,6 +53,7 @@ Object newCube()
     // vertexArray = {0, 1, 2, 2, 1, 4}
 
     // new line ^ ^
+    // changing new branch only, i ll be gone in a minute ;-;
 
     cube.edges.push_back({0, 1});
     cube.edges.push_back({1, 2});
