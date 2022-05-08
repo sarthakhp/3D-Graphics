@@ -52,7 +52,6 @@ long long int tempt;
 
 int movement_mode = 0;
 
-
 void basic_inits(){
 	SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -77,7 +76,7 @@ void show_text(string s, Point p, float size, TTF_Font* f) {
 	if (s.size() == 0) return;
 	SDL_Surface* text;
 	SDL_Texture* text_texture;
-	SDL_Color color = { 0,0,0 };
+	SDL_Color color = { 255, 255, 255 };
 	SDL_Rect dest;
 	Point startpoint__to_display, endpoint_to_display;
 	string initial_point_string;
@@ -118,7 +117,8 @@ void text_overlay() {
 	text_slot.y += font_h;
 
 	// text 5
-	show_text("movement mode : " + movement_mode == 0 ? "free":"origin", text_slot, font_h, f);
+	string s = (movement_mode == 0 ? "free" : "origin");
+	show_text("movement mode : " + (string)(movement_mode == 0 ? "free" : "origin"), text_slot, font_h, f);
 	text_slot.y += font_h;
 
 	// text 6
@@ -206,6 +206,59 @@ void process_projection(Object obj, int index){
 			// int j;
 			// cin >> j;
 			temp_sm = init_sm;
+		}
+	}
+}
+
+void process_projection_using_normal(Object obj, int index)
+{
+	// 2d object 'obj' to 2d object 'tempobj'
+	tempobj.center = find_intersection(view_window, Ray(view_point, obj.center)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
+	tempobj.edges = obj.edges;
+	tempobj.polygons = obj.polygons;
+	tempobj.colors = obj.colors;
+	tempobj.points = vector<Point>(0);
+	for (int i = 0; i < obj.points.size(); i++)
+	{
+		tempobj.points.push_back(find_intersection(view_window, Ray(view_point, obj.points[i])).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
+	}
+	// clip_2d_polygon();
+
+
+	// seeing if first calculate or recalculate
+	if (obj_2d.size() == objs.size())
+	{
+		obj_2d[index] = tempobj;
+	}
+	else
+	{
+		obj_2d.push_back(tempobj);
+	}
+
+	// writing to sm by filling 2d polygons (screen memory)
+	for (int obji = 0; obji < obj_2d.size(); obji++)
+	{
+		// for each 2d object:
+		for (int pi = 0; pi < obj_2d[obji].polygons.size(); pi++)
+		{
+			// for each polygon in the 2d object:
+
+			// if polygon not facing us, skip
+			if (objs[obji].normals[pi].dot_product( view_point - objs[obji].points[ objs[obji].polygons[pi][0] ] ) < 0){
+				continue;
+			}
+			
+			fill_points = vector<vector<Point>>(0);
+			// lists of points for filling the 2d polygon (can't pass direct polygon as it has point index instead of actual points)
+			points_tmp = vector<Point>(0);
+
+			for (int si = 0; si < obj_2d[obji].polygons[pi].size(); si++)
+			{
+				// for each point, inserting into the vector for the fill_polygon
+				points_tmp.push_back(obj_2d[obji].points[obj_2d[obji].polygons[pi][si]]);
+			}
+			row_fill_direct_to_screen(points_tmp, obj_2d[obji].colors[pi], sm);
+			
 		}
 	}
 }
@@ -298,7 +351,7 @@ void recalculate()
 	for (int obji = 0; obji < objs.size(); obji++)
 	{
 		long long t1 = SDL_GetTicks64();
-		process_projection(objs[obji], obji);
+		process_projection_using_normal(objs[obji], obji);
 		long long t2 = SDL_GetTicks64();
 		cout << "TIME : " << (t2 - t1) << endl;
 	}
@@ -496,7 +549,7 @@ int main(int argv, char** args){
 			mid_point_line_draw(sm, clipped_lines[i].first[0], clipped_lines[i].first[1], clipped_lines[i].second, 0);
 		}		
 
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0XFF);
+		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0, 0XFF);
 		SDL_RenderClear(renderer);
 		sm.renderer(renderer);
 		

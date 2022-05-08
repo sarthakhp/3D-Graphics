@@ -118,7 +118,7 @@ public:
     Object2D();
 };
 
-void mid_point_line_draw(Screen_memory &sm, const Point &start, const Point &end, const RGBcolor &line_color, int erase_mode);
+void mid_point_line_draw(Screen_memory &sm, Point &start, Point &end, const RGBcolor &line_color, int erase_mode);
 
 pair<Point,int> intersection_between_segments(vector<Point> v);
 
@@ -130,6 +130,15 @@ vector<Point> mid_point_line_draw_c(Point start, Point end, const RGBcolor &line
 
 vector<vector<Point>> row_fill(vector<Point> polygon_points, RGBcolor fill_color, Screen_memory &temp_sm);
 
+void row_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color, Screen_memory &temp_sm);
 
 
 
+
+
+
+
+
+
+
+// end

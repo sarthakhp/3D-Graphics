@@ -47,11 +47,24 @@ Object2D::Object2D()
 	center = Point();
 }
 
-void mid_point_line_draw(Screen_memory &temp_sm, const Point &start, const Point &end, const RGBcolor &line_color, int erase_mode) {
+void mid_point_line_draw(Screen_memory &temp_sm, Point &start, Point &end, const RGBcolor &line_color, int erase_mode) {
 	
 	Point current = start;
-	
-    temp_sm[current.y][current.x] = line_color;
+
+	if ((current.y >= temp_sm.size() || current.x >= temp_sm[0].size() || current.y < 0 || current.x < 0))
+	{
+		start = end;
+		end = current;
+		current = start;
+
+		if ((current.y >= temp_sm.size() || current.x >= temp_sm[0].size() || current.y < 0 || current.x < 0))
+		{
+			// finding intersection
+			return;
+		}
+	}
+
+	temp_sm[current.y][current.x] = line_color;
 	
 	if (floor(start.x) == floor(end.x) && floor(start.y) == floor(end.y)){
 		return;
@@ -74,8 +87,12 @@ void mid_point_line_draw(Screen_memory &temp_sm, const Point &start, const Point
 				d += dy * (x_step)-dx * (y_step);
 				current.y += y_step;
 			}
-			
-            temp_sm[current.y][current.x] = line_color;
+
+			if (current.y >= temp_sm.size() || current.x >= temp_sm[0].size() || current.y < 0 || current.x < 0)
+			{
+				break;
+			}
+			temp_sm[current.y][current.x] = line_color;
 			
 			if (floor(current.x) == floor(end.x)) {
 				break;
@@ -94,16 +111,17 @@ void mid_point_line_draw(Screen_memory &temp_sm, const Point &start, const Point
 				d += dy * (x_step)-dx * (y_step);
 				current.x += x_step;
 			}
-			
-            temp_sm[current.y][current.x] = line_color;
+
+			if (current.y >= temp_sm.size() || current.x >= temp_sm[0].size() || current.y < 0 || current.x < 0)
+			{
+				break;
+			}
+			temp_sm[current.y][current.x] = line_color;
 			if (floor(current.y) == floor(end.y)) {
 				break;
 			}
-
 		}
 	}
-
-	
 }
 
 pair<Point,int> intersection_between_segments(vector<Point> v){
@@ -372,7 +390,6 @@ vector<Point> mid_point_line_draw_c(Point start, Point end, const RGBcolor &line
 		start = end;
 		end = current;
 		current = start;
-
 		if ((current.y >= temp_sm.size() || current.x >= temp_sm[0].size() || current.y < 0 || current.x < 0))
 		{
 			return ans;
@@ -515,3 +532,71 @@ vector<vector<Point>> row_fill(vector<Point> polygon_points, RGBcolor fill_color
 	}
 	return ans;
 }
+
+void row_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color, Screen_memory &temp_sm)
+{
+	vector<vector<Point>> ans;
+	int min_x = INT_MAX, max_x = INT_MIN, min_y = INT_MAX, max_y = INT_MIN;
+	for (int i = 0; i < polygon_points.size(); i++)
+	{
+		polygon_points[i].x = floor(polygon_points[i].x);
+		polygon_points[i].y = floor(polygon_points[i].y);
+		if (polygon_points[i].x < min_x)
+			min_x = polygon_points[i].x;
+		if (polygon_points[i].x > max_x)
+			max_x = polygon_points[i].x;
+		if (polygon_points[i].y < min_y)
+			min_y = polygon_points[i].y;
+		if (polygon_points[i].y > max_y)
+			max_y = polygon_points[i].y;
+	}
+
+	Point start_p, end_p, next_p;
+	vector<int> yv(max_y - min_y + 1, 0);
+	vector<float> empty_v(0);
+	vector<vector<float>> all_points(max_y - min_y + 1, empty_v);
+	for (int i = 0; i < polygon_points.size(); i++)
+	{
+		start_p = polygon_points[(i - 1 + polygon_points.size()) % polygon_points.size()];
+		end_p = polygon_points[i];
+		int j = start_p.y;
+		float x;
+		while (j != end_p.y)
+		{
+			if (start_p.y > end_p.y)
+			{
+				j--;
+			}
+			else
+			{
+				j++;
+			}
+			if (j == end_p.y)
+				break;
+			x = ((((float)j - start_p.y) * (end_p.x - start_p.x)) / (end_p.y - start_p.y)) + start_p.x;
+			all_points[j - min_y].push_back(x);
+		}
+
+		next_p = polygon_points[(i + 1) % polygon_points.size()];
+		if (signbit(end_p.y - next_p.y) != signbit(end_p.y - start_p.y))
+		{
+			all_points[end_p.y - min_y].push_back(end_p.x);
+		}
+	}
+	for (int i = 0; i < all_points.size(); i++)
+	{
+		sort(all_points[i].begin(), all_points[i].end());
+
+		for (int j = 0; j < all_points[i].size(); j++)
+		{
+			if (j % 2 == 0)
+			{
+				Point start = Point(ceil(all_points[i][j]), i + min_y), end = Point(floor(all_points[i][j + 1]), i + min_y);
+
+				mid_point_line_draw(temp_sm, start, end, fill_color, 0);
+			}
+		}
+	}
+}
+
+// 

@@ -89,6 +89,8 @@ Object newCube()
     cube.colors.push_back(RGBcolor(255,255,255));
     cube.colors.push_back(RGBcolor(255,255,0));
 
+    
+
     return cube;
 }
 Object newPlane(){
