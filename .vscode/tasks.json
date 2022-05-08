@@ -4,7 +4,7 @@
 		{
 			"type": "shell",
 			"label": "SDL2",
-			"command": "C:\\Users\\sarth\\Desktop\\Dev\\mingw64\\bin\\g++.exe",
+			"command": "g++.exe",
 			"args": [
 				"-g",
 
