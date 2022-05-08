@@ -1,0 +1,4 @@
+lines.push_back({Point3D(0,0,0), Point3D(0,0,9)});
+lines.push_back({Point3D(-3,0,0), Point3D(3,0,0)});
+lines.push_back({Point3D(0,-2,0), Point3D(0,2,0)});
+
