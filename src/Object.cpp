@@ -32,6 +32,11 @@ void Edge3D::set(vector<Point3D*> v){
 }
 
 Object::Object(){
+    points = vector<Point3D>(0);
+    edges = vector<vector<int>>(0);
+    polygons = vector<vector<int>>(0);
+    normals = vector<Point3D>(0);
+    colors = vector<RGBcolor>(0);
     center = Point3D();
 }
 Object2D Object::object_to_2d(Frame view_window, Point3D view_point){
@@ -107,10 +112,11 @@ Object newCube()
 
     return cube;
 }
-Object newPlane(){
+Object newPlane(float length, Ray r){
     Object plane = Object();
+    plane.center = r.p1;
     Point3D c = plane.center;
-    float t = 0.75;
+    float t = length/2;
     vector<Point3D> p(4);
     p[0] = Point3D(c.x - t, c.y - t, c.z + t); // 4
     p[1] = Point3D(c.x + t, c.y - t, c.z + t); // 3
@@ -126,9 +132,9 @@ Object newPlane(){
 
     plane.polygons.push_back({0, 1, 2, 3});
 
-    plane.normals.push_back(Point3D(0,-1,0));
+    plane.normals.push_back(r.p2 - r.p1);
 
-    plane.colors.push_back(RGBcolor(255, 0, 0));
+    plane.colors.push_back(RGBcolor(rand()%255, rand()%255, rand()%255));
 
     return plane;
 }

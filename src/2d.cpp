@@ -51,8 +51,62 @@ void  Screen_memory :: renderer(SDL_Renderer *renderer){
     }
 }
 
+pair<Point, bool> intersection_between_two_lines(vector<Point> line1, vector<Point> line2)
+{
+	float a1, b1, c1, a2, b2, c2;
+	// cases: slope of lines are infinite
+	if (line1[0].x == line1[1].x)
+	{
+		a1 = 1;
+		b1 = 0;
+		c1 = -line1[0].x;
+	}
+	else
+	{
+		a1 = ((line1[1].y - line1[0].y) / (line1[1].x - line1[0].x));
+		b1 = 1;
+		c1 = line1[0].y - (a1 * (line1[0].x));
+	}
+	if (line2[0].x == line2[1].x)
+	{
+		a2 = 1;
+		b2 = 0;
+		c2 = -line2[0].x;
+	}
+	else
+	{
+		a2 = ((line2[1].y - line2[0].y) / (line2[1].x - line2[0].x));
+		b2 = 1;
+		c2 = line2[0].y - (a2 * (line2[0].x));
+	}
+	if ((a1 * b2) == (a2 * b1))
+	{
+		return {Point(), false};
+	}
+	else
+	{
+		return {Point((b1 * c2 - b2 * c1) / (a1 * b2 - a2 * b1), -(a2 * c1 - a1 * c2) / (a1 * b2 - a2 * b1)), true};
+	}
+}
+
+void temp_insert_point(vector<Point> &pts, Point p, vector<int> &poly){
+	if (pts.size() == 0){
+		pts.push_back(p);
+		poly.push_back(pts.size() - 1);
+		return;
+	}
+	if (!pts.back().isequal(p)){
+		pts.push_back(p);
+		poly.push_back(pts.size()-1);
+	}
+}
+
 Object2D::Object2D()
 {
+	points = vector<Point>(0);
+	edges = vector<vector<int>>(0);
+	polygons = vector<vector<int>>(0);
+	colors = vector<RGBcolor>(0);
 	center = Point();
 }
 Object2D Object2D::clip_object(Point window){
@@ -189,6 +243,135 @@ Object2D Object2D::clip_object(Point window){
 		}
 	}
 	
+	return ans_obj;
+}
+Object2D Object2D::clip_object_2(Point window)
+{
+	Object2D obj1, obj2, obj3, ans_obj;
+	vector<int> p1,  p2, p3, p4, ans_p;
+	vector<Point> points1, points2, points3, points4;
+	ans_obj.colors = this->colors;
+	int c = 0;
+	for (auto &pi : this->polygons)
+	{
+		c++;
+		p1 = {};
+		points1 = {};
+		// for line x = 0
+		for (int i = 0; i < pi.size(); i++){
+			Point s = this->points[pi[i]], e = this->points[pi[(i + 1)%pi.size()]];
+			pair<Point, bool> inters = intersection_between_two_lines({s,e},{Point(0,0),Point(0,window.y)});
+			
+			if (min(s.x, e.x) >= 0){
+				temp_insert_point(points1, s, p1);
+				temp_insert_point(points1, e, p1);
+			}
+			else if (inters.second && max(s.x,e.x) >= 0 && min(s.x,e.x) <= 0){
+				if (s.x > 0){
+					temp_insert_point(points1, s, p1);
+					temp_insert_point(points1, inters.first, p1);
+				}
+				else{
+					temp_insert_point(points1, inters.first, p1);
+					temp_insert_point(points1, e, p1);
+				}
+			}
+		}
+
+		p2 = {};
+		points2 = {};
+		// for line x = max
+		for (int i = 0; i < p1.size(); i++)
+		{
+			Point s = points1[p1[i]], e = points1[p1[(i + 1) % p1.size()]];
+			pair<Point, bool> inters = intersection_between_two_lines({s, e}, {Point(window.x, 0), Point(window.x, window.y)});
+			
+			if (max(s.x, e.x) <= window.x)
+			{
+				temp_insert_point(points2, s, p2);
+				temp_insert_point(points2, e, p2);
+			}
+			else if (inters.second && max(s.x, e.x) >= window.x && min(s.x, e.x) <= window.x)
+			{
+				if (s.x < window.x)
+				{
+					temp_insert_point(points2, s, p2);
+					temp_insert_point(points2, inters.first, p2);
+				}
+				else
+				{
+					temp_insert_point(points2, inters.first, p2);
+					temp_insert_point(points2, e, p2);
+				}
+			}
+		}
+
+		p3 = {};
+		points3 = {};
+		// for line y = 0
+		for (int i = 0; i < p2.size(); i++)
+		{
+			Point s = points2[p2[i]], e = points2[p2[(i + 1) % p2.size()]];
+			pair<Point, bool> inters = intersection_between_two_lines({s, e}, {Point(0, 0), Point(window.x, 0)});
+
+			if (min(s.y, e.y) >= 0)
+			{
+				temp_insert_point(points3, s, p3);
+				temp_insert_point(points3, e, p3);
+			}
+			else if (inters.second && max(s.y, e.y) >= 0 && min(s.y, e.y) <= 0)
+			{
+				if (s.y > 0)
+				{
+					temp_insert_point(points3, s, p3);
+					temp_insert_point(points3, inters.first, p3);
+				}
+				else
+				{
+					temp_insert_point(points3, inters.first, p3);
+					temp_insert_point(points3, e, p3);
+				}
+			}
+		}
+
+
+		p4 = {};
+		points4 = {};
+		// for line y = max
+		for (int i = 0; i < p3.size(); i++)
+		{
+			Point s = points3[p3[i]], e = points3[p3[(i + 1) % p3.size()]];
+			pair<Point, bool> inters = intersection_between_two_lines({s, e}, {Point(0, window.y), Point(window.x, window.y)});
+			if (max(s.y, e.y) <= window.y)
+			{
+				temp_insert_point(points4, s, p4);
+				temp_insert_point(points4, e, p4);
+			}
+			else if (inters.second && max(s.y, e.y) >= window.y && min(s.y, e.y) <= window.y)
+			{
+				if (s.y < window.y)
+				{
+					temp_insert_point(points4, s, p4);
+					temp_insert_point(points4, inters.first, p4);
+				}
+				else
+				{
+					temp_insert_point(points4, inters.first, p4);
+					temp_insert_point(points4, e, p4);
+				}
+			}
+		}
+
+		for (auto&i:p4){
+			i += ans_obj.points.size();
+		}
+		ans_obj.polygons.push_back(p4);
+		for (auto&i:points4){
+			ans_obj.points.push_back(i);
+		}
+	}
+
+
 	return ans_obj;
 }
 
@@ -333,39 +516,6 @@ pair<Point,int> intersection_between_segments(vector<Point> v){
 		}
 	}
 	return make_pair(Point(), 0);;
-}
-
-pair<Point,bool> intersection_between_two_lines(vector<Point> line1, vector<Point> line2){
-	float a1,b1,c1,a2,b2,c2;
-	// cases: slope of lines are infinite
-	if (line1[0].x == line1[1].x){
-		a1 = 1;
-		b1 = 0;
-		c1 = -line1[0].x;
-	}
-	else{
-		a1 = - ( (line1[1].y - line1[0].y)/(line1[1].x - line1[0].x) );
-		b1 = 1;
-		c1 = line1[0].y - (a1 * (line1[0].x));
-	}
-	if (line2[0].x == line2[1].x)
-	{
-		a2 = 1;
-		b2 = 0;
-		c2 = -line2[0].x;
-	}
-	else
-	{
-		a2 = -((line2[1].y - line2[0].y) / (line2[1].x - line2[0].x));
-		b2 = 1;
-		c2 = line2[0].y - (a2 * (line2[0].x));
-	}
-	if ((a1*b2) == (a2*b1)){
-		return {Point(), false};
-	}
-	else{
-		return { Point((b1 * c2 - b2 * c1) / (a1 * b2 - a2 * b1), - (a2*c1 - a1*c2) / (a1 * b2 - a2 * b1)), true };
-	}
 }
 
 vector <pair<vector<Point>,RGBcolor>> clip(vector <pair<vector<Point>,RGBcolor>> lines, int w, int h){

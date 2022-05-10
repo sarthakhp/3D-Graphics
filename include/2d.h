@@ -48,6 +48,9 @@ struct RGBcolor {
         b = 255;
         a = 255;
     }
+    RGBcolor(int ci){
+        r = ci; g = ci; b = ci; a = 255;
+    }
     RGBcolor(int ri, int gi, int bi, int ai) {
         r = ri;
         g = gi;
@@ -119,6 +122,7 @@ public:
     // methods
     Object2D();
     Object2D clip_object(Point window_2d);
+    Object2D clip_object_2(Point window);
 };
 
 void mid_point_line_draw(Screen_memory &sm, Point &start, Point &end, const RGBcolor &line_color, int erase_mode);

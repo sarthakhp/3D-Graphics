@@ -163,8 +163,12 @@ void get_old_objects(){
 
 void set_objects(vector<Object> &objv ) {
 	// request objects
-	objv.push_back(newCube());
-	// objv.push_back(newPlane());
+	// objv.push_back(newCube());
+	for (int i = 0; i < 10; i++){
+		for (int j = 0; j < 10; j++){
+			objv.push_back(newPlane(1, Ray(Point3D(i,-1,j), Point3D(i,0,j))));
+		}
+	}
 
 	obj_2d = vector<Object2D>(objv.size());
 }
@@ -236,15 +240,19 @@ void process_projection_using_normal(vector<Object> obj_vector)
 	// 2d object 'obj' to 2d object 'tempobj'
 	int index=0;
 	for(auto&obj:obj_vector){
-		// seeing if first calculate or recalculate
+		
+		if ((obj.center - view_point).dot_product(view_ray.p2 - view_ray.p1) < 0 ){
+			obj_2d[index] = Object2D();
+			continue;
+		}
 		obj_2d[index] = obj.object_to_2d(view_window, view_point);
 		index++;
 	}
 
-	// // clipping the 2d objects
-	// for (auto&obj_2d_i:obj_2d){
-	// 	obj_2d_i = obj_2d_i.clip_object(Point(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
-	// }
+	// clipping the 2d objects
+	for (auto&obj_2d_i:obj_2d){
+		obj_2d_i = obj_2d_i.clip_object_2(Point(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
+	}
 	
 
 	// writing to sm by filling 2d polygons (screen memory)
@@ -266,8 +274,7 @@ void process_projection_using_normal(vector<Object> obj_vector)
 
 			for (int si = 0; si < obj_2d[obji].polygons[pi].size(); si++)
 			{
-				// for each point, inserting into the vector for the fill_polygon
-				obj_2d[obji].points[obj_2d[obji].polygons[pi][si]].print(1);
+				// inserting each point into the vector for the fill_polygon
 				points_tmp.push_back(obj_2d[obji].points[obj_2d[obji].polygons[pi][si]]);
 			}
 			
@@ -439,6 +446,48 @@ void handle_input()
 	}
 }
 
+void clip_test(Object2D o){
+	Point offset = Point(100,100);
+	vector<Point> temp_pts = {
+		Point(0, 0),
+		Point(400, 0),
+		Point(400, 400),
+		Point(0, 400)
+	};
+	for (auto&i:temp_pts){
+		i = i + offset;
+	}
+	mid_point_line_draw(sm, temp_pts[0], temp_pts[1], RGBcolor(255), 0);
+	mid_point_line_draw(sm, temp_pts[2], temp_pts[1], RGBcolor(255), 0);
+	mid_point_line_draw(sm, temp_pts[2], temp_pts[3], RGBcolor(255), 0);
+	mid_point_line_draw(sm, temp_pts[0], temp_pts[3], RGBcolor(255), 0);
+
+	Frame f = Frame(Ray(Point3D(0, 0, -1), Point3D()), 1, 1, Ray(Point3D(0, 0, 0), Point3D(0, 1, 0)));
+	Object2D oo = newPlane(1, Ray(Point3D(0, -1, 0), Point3D(0, 0, 0))).object_to_2d(f, Point3D(0, 0, -2));
+	oo.points = {
+		Point(100, 100),
+		Point(200, 300),
+		Point(-100, 600),
+		Point(500, 300)
+	};
+
+	for (auto &i : oo.polygons)
+	{
+		for (auto &j : i)
+		{
+			Point s = oo.points[j] + offset, e = oo.points[(j + 1) % i.size()] + offset;
+			mid_point_line_draw(sm, s, e, RGBcolor(255, 0, 0), 0);
+		}
+	}
+	o = oo.clip_object_2(Point(400, 400));
+	for (auto &i:o.polygons){
+		for (auto &j:i){
+			Point s = o.points[j] + offset, e = o.points[(j + 1) % i.size()] + offset;
+			mid_point_line_draw(sm, s,e , RGBcolor(0,0,255), 0 );
+		}
+	}
+}
+
 int main(int argv, char** args){
 
 	basic_inits();
@@ -538,6 +587,40 @@ int main(int argv, char** args){
 
 	old_time = SDL_GetTicks64();
 
+	cout << "--------------------" << endl;
+
+	Frame f = Frame(Ray(Point3D(0, 0, -1), Point3D()), 1, 1, Ray(Point3D(0, 0, 0), Point3D(0, 1, 0)));
+	f.p1.print(1);
+	Object2D o = newPlane(1, Ray(Point3D(0, -1, 0), Point3D(0, 0, 0))).object_to_2d(f, Point3D(0, 0, -2));
+	o.points = {
+		Point(100, 100),
+		Point(200, 300),
+		Point(-100, 600),
+		Point(500, 300)
+	};
+	for (auto &i : o.points)
+	{
+		i.print(1);
+	}
+	cout << endl;
+	o = o.clip_object_2(Point(400,400));
+	for (auto &i : o.points)
+	{
+		i.print(1);
+	}
+	for (auto &pi: o.polygons[0]){
+		cout << pi << " ";
+	}
+	cout << endl;
+
+
+	// intersection_between_two_lines({Point(10,250),Point(-50,50)},{Point(0,0), Point(0,400)}).first.print(1);
+
+	int somen = 0;
+	cout <<endl << "press any key...";
+	// cin >> somen;
+	// return 0;
+
 	// game loop
 	while(isRunning){
 	
@@ -561,6 +644,9 @@ int main(int argv, char** args){
 		for (int i = 0; i < clipped_lines.size(); i++){
 			mid_point_line_draw(sm, clipped_lines[i].first[0], clipped_lines[i].first[1], clipped_lines[i].second, 0);
 		}
+
+		// clipping test:
+		// clip_test(o);
 
 		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0, 0XFF);
 		SDL_RenderClear(renderer);

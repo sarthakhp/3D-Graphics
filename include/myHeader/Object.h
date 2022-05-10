@@ -55,7 +55,7 @@ public:
 };
 
 Object newCube();
-Object newPlane();
+Object newPlane(float length, Ray r);
 
 void assign_pixel(Screen_memory &temp_sm, Screen_memory &actual_sm, vector<vector<float>> &distance_memory, Point &current, Object &object, int poly_i);
 // void mid_point_line_draw_c(Screen_memory &sm, Point start, Point end, const RGBcolor &line_color, int erase_mode, vector<vector<float>> &distance_memory, Screen_memory &temp_sm, Object &obj, int polygon_index);
