@@ -21,10 +21,19 @@ void Point::print(int end_l){
 	if (end_l > 0) cout << this->x << " (2d) " << this->y << endl;
 }
 
+Screen_memory::Screen_memory()
+{
+	v = vector<vector<RGBcolor>>(0);
+}
 Screen_memory::Screen_memory(int w, int h){
     RGBcolor r = RGBcolor(255, 225, 0, 255);
     tempv = vector<RGBcolor>(w, r);
     v = vector<vector<RGBcolor>>(h, tempv);
+}
+Screen_memory::Screen_memory(int w, int h, RGBcolor color)
+{
+	tempv = vector<RGBcolor>(w, color);
+	v = vector<vector<RGBcolor>>(h, tempv);
 }
 vector<RGBcolor> & Screen_memory :: operator [](int index) {
     return v[index];
@@ -45,6 +54,142 @@ void  Screen_memory :: renderer(SDL_Renderer *renderer){
 Object2D::Object2D()
 {
 	center = Point();
+}
+Object2D Object2D::clip_object(Point window){
+	Object2D ans_obj;
+	ans_obj.colors = this->colors;
+	for(auto&pi:this->polygons){
+		ans_obj.polygons.push_back({});
+		for (int i = 0; i < pi.size(); i++){
+			// first point inside_frame ?
+			if (this->points[pi[i]].x <= window.x && this->points[pi[i]].x >= 0 && this->points[pi[i]].y <= window.y && this->points[pi[i]].y >= 0){
+				ans_obj.points.push_back(this->points[pi[i]]);
+				ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+				if (this->points[pi[(i + 1) % pi.size()]].x <= window.x && this->points[pi[(i + 1) % pi.size()]].x >= 0 && this->points[pi[(i + 1) % pi.size()]].y <= window.y && this->points[pi[(i + 1) % pi.size()]].y >= 0){
+					ans_obj.points.push_back(this->points[pi[(i + 1) % pi.size()]]);
+					ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					continue;
+				}
+			}
+
+			// finding line intersection with grid
+			vector<Point> l = {this->points[pi[i]], this->points[pi[(i + 1) % pi.size()]]};
+			// grid line x = 0
+			vector<Point> grid_line = {Point(0,0) , Point(0,window.y)};
+			intersection_between_two_lines(l, grid_line).first.print(1);
+			if (intersection_between_two_lines(l, grid_line).second){
+				Point intersected_point = intersection_between_two_lines(l, grid_line).first;
+				cout << "ahhh" << endl;
+				l[0].print(1);
+				l[1].print(1);
+				if (intersected_point.x <= (max(l[0].x, l[1].x)) 
+				&& intersected_point.y <= (max(l[0].y, l[1].y))
+				&& intersected_point.x >= (min(l[0].x, l[1].x)) 
+				&& intersected_point.y >= (min(l[0].x, l[1].x)) ){
+					// check if point is out side (upper side or lower side) of box or inside the box
+					cout << "oyooo" << endl;
+					if (intersected_point.y > window.y){
+						ans_obj.points.push_back(grid_line[1]);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+					else if (intersected_point.y < 0)
+					{
+						ans_obj.points.push_back(grid_line[0]);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+					else{
+						cout << "yes" << endl;
+						ans_obj.points.push_back(intersected_point);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+				}
+			}
+			// grid line x = max
+			grid_line = {Point(window.x, 0), Point(window.x, window.y)};
+			if (intersection_between_two_lines(l, {Point(window.x, 0), Point(window.x, window.y)}).second)
+			{
+				Point intersected_point = intersection_between_two_lines({this->points[pi[i]], this->points[pi[(i + 1) % pi.size()]]}, grid_line).first;
+				if (intersected_point.x <= (max(l[0].x, l[1].x)) && intersected_point.y <= (max(l[0].y, l[1].y)) && intersected_point.x >= (min(l[0].x, l[1].x)) && intersected_point.y >= (min(l[0].x, l[1].x)))
+				{
+					// check if point is out side (upper side or lower side) of box or inside the box
+					if (intersected_point.y > window.y)
+					{
+						ans_obj.points.push_back(grid_line[1]);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+					else if (intersected_point.y < 0)
+					{
+						ans_obj.points.push_back(grid_line[0]);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+					else
+					{
+						ans_obj.points.push_back(intersected_point);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+				}
+			}
+			// grid line y = 0
+			grid_line = {Point(0, 0), Point(window.x, 0)};
+			if (intersection_between_two_lines(l, {Point(window.x, 0), Point(window.x, window.y)}).second)
+			{
+				Point intersected_point = intersection_between_two_lines({this->points[pi[i]], this->points[pi[(i + 1) % pi.size()]]}, grid_line).first;
+				if (intersected_point.x <= (max(l[0].x, l[1].x)) && intersected_point.y <= (max(l[0].y, l[1].y)) && intersected_point.x >= (min(l[0].x, l[1].x)) && intersected_point.y >= (min(l[0].x, l[1].x)))
+				{
+					// check if point is out side (upper side or lower side) of box or inside the box
+					if (intersected_point.x > window.x)
+					{
+						ans_obj.points.push_back(grid_line[1]);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+					else if (intersected_point.x < 0)
+					{
+						ans_obj.points.push_back(grid_line[0]);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+					else
+					{
+						ans_obj.points.push_back(intersected_point);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+				}
+			}
+			// grid line y = max
+			grid_line = {Point(0, window.y), Point(window.x, window.y)};
+			if (intersection_between_two_lines(l, {Point(window.x, 0), Point(window.x, window.y)}).second)
+			{
+				Point intersected_point = intersection_between_two_lines({this->points[pi[i]], this->points[pi[(i + 1) % pi.size()]]}, grid_line).first;
+				if (intersected_point.x <= (max(l[0].x, l[1].x)) && intersected_point.y <= (max(l[0].y, l[1].y)) && intersected_point.x >= (min(l[0].x, l[1].x)) && intersected_point.y >= (min(l[0].x, l[1].x)))
+				{
+					// check if point is out side (upper side or lower side) of box or inside the box
+					if (intersected_point.x > window.x)
+					{
+						ans_obj.points.push_back(grid_line[1]);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+					else if (intersected_point.x < 0)
+					{
+						ans_obj.points.push_back(grid_line[0]);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+					else
+					{
+						ans_obj.points.push_back(intersected_point);
+						ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+					}
+				}
+			}
+
+			// second point inside_frame ?
+			if (this->points[pi[(i + 1) % pi.size()]].x <= window.x && this->points[pi[(i + 1) % pi.size()]].x >= 0 && this->points[pi[(i + 1) % pi.size()]].y <= window.y && this->points[pi[(i + 1) % pi.size()]].y >= 0)
+			{
+				ans_obj.points.push_back(this->points[pi[(i + 1) % pi.size()]]);
+				ans_obj.polygons.back().push_back(ans_obj.points.size() - 1);
+			}
+		}
+	}
+	
+	return ans_obj;
 }
 
 void mid_point_line_draw(Screen_memory &temp_sm, Point &start, Point &end, const RGBcolor &line_color, int erase_mode) {
@@ -188,6 +333,39 @@ pair<Point,int> intersection_between_segments(vector<Point> v){
 		}
 	}
 	return make_pair(Point(), 0);;
+}
+
+pair<Point,bool> intersection_between_two_lines(vector<Point> line1, vector<Point> line2){
+	float a1,b1,c1,a2,b2,c2;
+	// cases: slope of lines are infinite
+	if (line1[0].x == line1[1].x){
+		a1 = 1;
+		b1 = 0;
+		c1 = -line1[0].x;
+	}
+	else{
+		a1 = - ( (line1[1].y - line1[0].y)/(line1[1].x - line1[0].x) );
+		b1 = 1;
+		c1 = line1[0].y - (a1 * (line1[0].x));
+	}
+	if (line2[0].x == line2[1].x)
+	{
+		a2 = 1;
+		b2 = 0;
+		c2 = -line2[0].x;
+	}
+	else
+	{
+		a2 = -((line2[1].y - line2[0].y) / (line2[1].x - line2[0].x));
+		b2 = 1;
+		c2 = line2[0].y - (a2 * (line2[0].x));
+	}
+	if ((a1*b2) == (a2*b1)){
+		return {Point(), false};
+	}
+	else{
+		return { Point((b1 * c2 - b2 * c1) / (a1 * b2 - a2 * b1), - (a2*c1 - a1*c2) / (a1 * b2 - a2 * b1)), true };
+	}
 }
 
 vector <pair<vector<Point>,RGBcolor>> clip(vector <pair<vector<Point>,RGBcolor>> lines, int w, int h){

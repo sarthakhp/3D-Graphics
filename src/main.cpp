@@ -8,6 +8,7 @@
 #include <map>
 #include <climits>
 #include <SDL_headers/SDL_ttf.h>
+#include <bits/stdc++.h>
 
 // 
 #include <input_handler.h>
@@ -23,7 +24,7 @@ SDL_Renderer *renderer;
 SDL_Window* window;
 SDL_Event event;
 bool isRunning = true;
-Screen_memory sm(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), init_sm(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), temp_sm(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
+Screen_memory sm, init_sm, temp_sm;
 vector<Point3D> all_points;
 Point3D view_point,watch_direction;
 float watch_theta = 0, watch_phi = PI, turning_speed = 0, std_turning_speed = 0.02;
@@ -53,6 +54,7 @@ long long int tempt;
 int movement_mode = 0;
 
 void basic_inits(){
+
 	SDL_Init(SDL_INIT_EVERYTHING);
 
 	window = SDL_CreateWindow("Hello SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
@@ -65,11 +67,15 @@ void basic_inits(){
 	{
 		cout << "Error initializing SDL_ttf: " << TTF_GetError() << endl;
 	}
-	f = TTF_OpenFont(FONT_PATH, 24);
+	f = TTF_OpenFont(FONT_PATH, 200);
 	if (!f)
 	{
 		cout << "Failed to load font: " << TTF_GetError() << endl;
 	}
+
+	sm = Screen_memory(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
+	init_sm = Screen_memory(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT, RGBcolor(0, 0, 0));
+	temp_sm = Screen_memory(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
 }
 
 void show_text(string s, Point p, float size, TTF_Font* f) {
@@ -100,6 +106,7 @@ void show_text(string s, Point p, float size, TTF_Font* f) {
 
 void text_overlay() {
 	
+	std::string text_string;
 	// text 1		
 	show_text("movement_speed: " + to_string(movement_speed), text_slot, font_h, f);
 	text_slot.y += font_h;
@@ -113,7 +120,19 @@ void text_overlay() {
 	text_slot.y += font_h;
 
 	//text 4
-	show_text("view point z : " + to_string(view_point.z), text_slot, font_h, f);
+	string stringx, stringy, stringz;
+	stringstream ss,ssy,ssz;
+	ss << std::fixed << std::setprecision(2) << view_point.x;
+	stringx = ss.str();
+	ss.clear();
+	ssy << std::fixed << std::setprecision(2) << view_point.y;
+	stringy = ssy.str();
+	// ss.clear();
+	ssz << std::fixed << std::setprecision(2) << view_point.z;
+	stringz = ssz.str();
+
+	// show_text("view point x : " + to_string(round(view_point.x)) + " y : " + to_string(round(view_point.y)) + " z : " + to_string(round(view_point.x)), text_slot, font_h, f);
+	show_text("view point x : " + stringx + " y : " + stringy + " z : " + stringz, text_slot, font_h, f);
 	text_slot.y += font_h;
 
 	// text 5
@@ -142,10 +161,12 @@ void get_old_objects(){
 	}
 }
 
-void get_objects(vector<Object> &objv ) {
+void set_objects(vector<Object> &objv ) {
 	// request objects
 	objv.push_back(newCube());
 	// objv.push_back(newPlane());
+
+	obj_2d = vector<Object2D>(objv.size());
 }
 
 void process_projection(Object obj, int index){
@@ -210,30 +231,21 @@ void process_projection(Object obj, int index){
 	}
 }
 
-void process_projection_using_normal(Object obj, int index)
+void process_projection_using_normal(vector<Object> obj_vector)
 {
 	// 2d object 'obj' to 2d object 'tempobj'
-	tempobj.center = find_intersection(view_window, Ray(view_point, obj.center)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
-	tempobj.edges = obj.edges;
-	tempobj.polygons = obj.polygons;
-	tempobj.colors = obj.colors;
-	tempobj.points = vector<Point>(0);
-	for (int i = 0; i < obj.points.size(); i++)
-	{
-		tempobj.points.push_back(find_intersection(view_window, Ray(view_point, obj.points[i])).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
+	int index=0;
+	for(auto&obj:obj_vector){
+		// seeing if first calculate or recalculate
+		obj_2d[index] = obj.object_to_2d(view_window, view_point);
+		index++;
 	}
-	// clip_2d_polygon();
 
-
-	// seeing if first calculate or recalculate
-	if (obj_2d.size() == objs.size())
-	{
-		obj_2d[index] = tempobj;
-	}
-	else
-	{
-		obj_2d.push_back(tempobj);
-	}
+	// // clipping the 2d objects
+	// for (auto&obj_2d_i:obj_2d){
+	// 	obj_2d_i = obj_2d_i.clip_object(Point(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
+	// }
+	
 
 	// writing to sm by filling 2d polygons (screen memory)
 	for (int obji = 0; obji < obj_2d.size(); obji++)
@@ -255,8 +267,10 @@ void process_projection_using_normal(Object obj, int index)
 			for (int si = 0; si < obj_2d[obji].polygons[pi].size(); si++)
 			{
 				// for each point, inserting into the vector for the fill_polygon
+				obj_2d[obji].points[obj_2d[obji].polygons[pi][si]].print(1);
 				points_tmp.push_back(obj_2d[obji].points[obj_2d[obji].polygons[pi][si]]);
 			}
+			
 			row_fill_direct_to_screen(points_tmp, obj_2d[obji].colors[pi], sm);
 			
 		}
@@ -350,11 +364,11 @@ void recalculate()
 
 	for (int obji = 0; obji < objs.size(); obji++)
 	{
-		long long t1 = SDL_GetTicks64();
-		process_projection_using_normal(objs[obji], obji);
-		long long t2 = SDL_GetTicks64();
-		cout << "TIME : " << (t2 - t1) << endl;
 	}
+	long long t1 = SDL_GetTicks64();
+	process_projection_using_normal(objs);
+	long long t2 = SDL_GetTicks64();
+	cout << "TIME : " << (t2 - t1) << endl;
 }
 
 void handle_input()
@@ -429,7 +443,7 @@ int main(int argv, char** args){
 
 	basic_inits();
 
-	get_objects(objs);
+	set_objects(objs);
 	
 	// Old Objects
 	get_old_objects();
@@ -520,11 +534,10 @@ int main(int argv, char** args){
 	// intersection_between_segments({ap1,ap2,Point(0,0),Point(400-1,0)}).first.print(1);
 	// intersection_between_segments({ap1,ap2,Point(0,400-1),Point(400-1,400-1)}).first.print(1);
 
-	for (int obji = 0; obji < objs.size(); obji++){
-		process_projection(objs[obji], obji);
-	}
+	recalculate();
 
 	old_time = SDL_GetTicks64();
+
 	// game loop
 	while(isRunning){
 	
@@ -547,7 +560,7 @@ int main(int argv, char** args){
 		// draw view lines vector on screen.
 		for (int i = 0; i < clipped_lines.size(); i++){
 			mid_point_line_draw(sm, clipped_lines[i].first[0], clipped_lines[i].first[1], clipped_lines[i].second, 0);
-		}		
+		}
 
 		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0, 0XFF);
 		SDL_RenderClear(renderer);

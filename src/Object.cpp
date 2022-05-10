@@ -12,7 +12,7 @@
 // my headers
 #include <input_handler.h>
 #include <3d.h>
-// #include <2d.h>
+#include <2d.h>
 #include <myHeader/Object.h>
 
 #include <myHeader/values.h>
@@ -33,6 +33,20 @@ void Edge3D::set(vector<Point3D*> v){
 
 Object::Object(){
     center = Point3D();
+}
+Object2D Object::object_to_2d(Frame view_window, Point3D view_point){
+    // 3d object 'obj' to 2d object 'tempobj'
+    Object2D tempobj;
+    tempobj.center = find_intersection(view_window, Ray(view_point, this->center)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
+    tempobj.edges = this->edges;
+    tempobj.polygons = this->polygons;
+    tempobj.colors = this->colors;
+    tempobj.points = vector<Point>(0);
+    for (int i = 0; i < this->points.size(); i++)
+    {
+        tempobj.points.push_back(find_intersection(view_window, Ray(view_point, this->points[i])).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
+    }
+    return tempobj;
 }
 
 Object newCube()
@@ -111,6 +125,8 @@ Object newPlane(){
     plane.edges.push_back({3, 1});
 
     plane.polygons.push_back({0, 1, 2, 3});
+
+    plane.normals.push_back(Point3D(0,-1,0));
 
     plane.colors.push_back(RGBcolor(255, 0, 0));
 

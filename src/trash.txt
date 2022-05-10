@@ -2,3 +2,14 @@ lines.push_back({Point3D(0,0,0), Point3D(0,0,9)});
 lines.push_back({Point3D(-3,0,0), Point3D(3,0,0)});
 lines.push_back({Point3D(0,-2,0), Point3D(0,2,0)});
 
+// 2d object 'obj' to 2d object 'tempobj'
+tempobj.center = find_intersection(view_window, Ray(view_point, obj.center)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
+tempobj.edges = obj.edges;
+tempobj.polygons = obj.polygons;
+tempobj.colors = obj.colors;
+tempobj.points = vector<Point>(0);
+for (int i = 0; i < obj.points.size(); i++)
+{
+    tempobj.points.push_back(find_intersection(view_window, Ray(view_point, obj.points[i])).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
+}
+// clip_2d_polygon();

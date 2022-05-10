@@ -46,6 +46,7 @@ public:
 
     // methods
     Object();
+    Object2D object_to_2d(Frame view_window, Point3D view_point);
 
     // equation
     // circle

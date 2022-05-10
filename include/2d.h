@@ -90,8 +90,10 @@ class Screen_memory {
 		vector<RGBcolor> tempv;
 		vector<vector<RGBcolor>> v;
 
+        Screen_memory();
 		Screen_memory(int w, int h);
-		vector<RGBcolor>& operator [](int index);
+        Screen_memory(int w, int h, RGBcolor color);
+        vector<RGBcolor>& operator [](int index);
 		int size();
 
 		void renderer(SDL_Renderer *renderer);
@@ -116,11 +118,14 @@ public:
 
     // methods
     Object2D();
+    Object2D clip_object(Point window_2d);
 };
 
 void mid_point_line_draw(Screen_memory &sm, Point &start, Point &end, const RGBcolor &line_color, int erase_mode);
 
 pair<Point,int> intersection_between_segments(vector<Point> v);
+
+pair<Point, bool> intersection_between_two_lines(vector<Point> line1, vector<Point> line2);
 
 vector <pair<vector<Point>,RGBcolor>> clip(vector <pair<vector<Point>,RGBcolor>> lines, int w, int h);
 
