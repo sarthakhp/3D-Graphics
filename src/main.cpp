@@ -489,7 +489,7 @@ void clip_test(Object2D o){
 }
 
 int main(int argv, char** args){
-
+	
 	basic_inits();
 
 	set_objects(objs);
@@ -499,10 +499,6 @@ int main(int argv, char** args){
 	
 	//viewing position
 	view_point = Point3D(0,0,5);
-	
-	// viewing orientation
-	// watch_phi += 0.78 + PI/2;
-	// watch_theta = -0.76;
 	view_ray = Ray(view_point, view_point + Point3D(watch_theta,watch_phi));
 	view_ray.unitize();
 	view_ray.p1 = view_ray.p1 + view_point;
@@ -569,20 +565,8 @@ int main(int argv, char** args){
 	
 	// clip partial lines in 2d and add to in vector
 	clipped_lines = clip(screen_lines, MAIN_VIEW_WIDTH,MAIN_VIEW_HEIGHT);
-	// clipped_lines = screen_lines;
 
-	// 241 (2d) -17
-	// 234 (2d) 331
-	// 223 (2d) 38
-	// 224 (2d) 408
-	// 230 (2d) 88
-	// 234 (2d) 425
-	// 198 (2d) -3
-	// 198 (2d) 294
-	Point ap1(198,-3), ap2(198,294);
-	// intersection_between_segments({ap1,ap2,Point(0,0),Point(400-1,0)}).first.print(1);
-	// intersection_between_segments({ap1,ap2,Point(0,400-1),Point(400-1,400-1)}).first.print(1);
-
+	// calculating first frame before starting game loop
 	recalculate();
 
 	old_time = SDL_GetTicks64();
@@ -611,13 +595,12 @@ int main(int argv, char** args){
 			mid_point_line_draw(sm, clipped_lines[i].first[0], clipped_lines[i].first[1], clipped_lines[i].second, 0);
 		}
 
-		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0, 0XFF);
-		SDL_RenderClear(renderer);
-		sm.renderer(renderer);
-		
 		//text
 		text_overlay();
 
+		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0, 0XFF);
+		SDL_RenderClear(renderer);
+		sm.renderer(renderer);
 		SDL_RenderPresent(renderer);
 		
 		//frame rate
