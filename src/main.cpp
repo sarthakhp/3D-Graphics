@@ -587,40 +587,6 @@ int main(int argv, char** args){
 
 	old_time = SDL_GetTicks64();
 
-	cout << "--------------------" << endl;
-
-	Frame f = Frame(Ray(Point3D(0, 0, -1), Point3D()), 1, 1, Ray(Point3D(0, 0, 0), Point3D(0, 1, 0)));
-	f.p1.print(1);
-	Object2D o = newPlane(1, Ray(Point3D(0, -1, 0), Point3D(0, 0, 0))).object_to_2d(f, Point3D(0, 0, -2));
-	o.points = {
-		Point(100, 100),
-		Point(200, 300),
-		Point(-100, 600),
-		Point(500, 300)
-	};
-	for (auto &i : o.points)
-	{
-		i.print(1);
-	}
-	cout << endl;
-	o = o.clip_object_2(Point(400,400));
-	for (auto &i : o.points)
-	{
-		i.print(1);
-	}
-	for (auto &pi: o.polygons[0]){
-		cout << pi << " ";
-	}
-	cout << endl;
-
-
-	// intersection_between_two_lines({Point(10,250),Point(-50,50)},{Point(0,0), Point(0,400)}).first.print(1);
-
-	int somen = 0;
-	cout <<endl << "press any key...";
-	// cin >> somen;
-	// return 0;
-
 	// game loop
 	while(isRunning){
 	
