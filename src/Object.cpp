@@ -31,6 +31,21 @@ void Edge3D::set(vector<Point3D*> v){
     this->len = ((*v[0]) - *v[1]).len();
 }
 
+void temp_insert_3d_point(vector<Point> &pts, Point p, vector<int> &poly)
+{
+    if (pts.size() == 0)
+    {
+        pts.push_back(p);
+        poly.push_back(pts.size() - 1);
+        return;
+    }
+    if (!pts.back().isequal(p))
+    {
+        pts.push_back(p);
+        poly.push_back(pts.size() - 1);
+    }
+}
+
 Object::Object(){
     points = vector<Point3D>(0);
     edges = vector<vector<int>>(0);
@@ -39,18 +54,40 @@ Object::Object(){
     colors = vector<RGBcolor>(0);
     center = Point3D();
 }
-Object2D Object::object_to_2d(Frame view_window, Point3D view_point){
+Object2D Object::object_to_2d(Frame view_window, Point3D view_point, Ray normal){
+
+    normal.p1 = Point3D();
+    normal.p2 = (view_window.p2 - view_window.p1).cross_product(view_window.p4 - view_window.p1);
+
     // 3d object 'obj' to 2d object 'tempobj'
     Object2D tempobj;
     tempobj.center = find_intersection(view_window, Ray(view_point, this->center)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
     tempobj.edges = this->edges;
-    tempobj.polygons = this->polygons;
     tempobj.colors = this->colors;
     tempobj.points = vector<Point>(0);
-    for (int i = 0; i < this->points.size(); i++)
-    {
-        tempobj.points.push_back(find_intersection(view_window, Ray(view_point, this->points[i])).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
+
+    for (auto&pi:this->polygons){
+        tempobj.polygons.push_back({});
+        for (int i = 0; i < pi.size(); i++){
+            Point3D s = this->points[pi[i]], e = this->points[pi[(i+1)%pi.size()]];
+            float angle_s = (s - view_window.p1).dot_product(normal.p2 - normal.p1), angle_e = (e - view_window.p1).dot_product(normal.p2 - normal.p1);
+            
+            // if both start and end are positive
+            if (angle_s >= 0 && angle_e >= 0){
+                temp_insert_3d_point(tempobj.points, find_intersection(view_window, Ray(view_point, s)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+                temp_insert_3d_point(tempobj.points, find_intersection(view_window, Ray(view_point, e)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+            }
+            else if (angle_s < 0 && angle_e >= 0){
+                temp_insert_3d_point(tempobj.points, find_intersection(view_window, Ray(s, e)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+                temp_insert_3d_point(tempobj.points, find_intersection(view_window, Ray(view_point, e)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+            }else if (angle_s >= 0 && angle_e < 0 ){
+                temp_insert_3d_point(tempobj.points, find_intersection(view_window, Ray(view_point, s)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+                temp_insert_3d_point(tempobj.points, find_intersection(view_window, Ray(s, e)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+            }
+        }
     }
+
+
     return tempobj;
 }
 
@@ -112,18 +149,73 @@ Object newCube()
 
     return cube;
 }
+Object newCube(float length)
+{
+    Object cube = Object();
+    Point3D c = cube.center;
+    float t = length/2;
+    vector<Point3D> p(8);
+    p[0] = Point3D(c.x - t, c.y + t, c.z + t); // 1
+    p[1] = Point3D(c.x + t, c.y + t, c.z + t); // 2
+    p[2] = Point3D(c.x + t, c.y - t, c.z + t); // 3
+    p[3] = Point3D(c.x - t, c.y - t, c.z + t); // 4
+    p[4] = Point3D(c.x - t, c.y + t, c.z - t);
+    p[5] = Point3D(c.x + t, c.y + t, c.z - t);
+    p[6] = Point3D(c.x + t, c.y - t, c.z - t);
+    p[7] = Point3D(c.x - t, c.y - t, c.z - t);
+    cube.points = p;
+    // vertexArray = {0, 1, 2, 2, 1, 4}
+
+    // new line ^ ^
+    // changing new branch only, i ll be gone in a minute ;-;
+
+    cube.edges.push_back({0, 1});
+    cube.edges.push_back({1, 2});
+    cube.edges.push_back({2, 3});
+    cube.edges.push_back({3, 1});
+    cube.edges.push_back({4, 5});
+    cube.edges.push_back({5, 6});
+    cube.edges.push_back({6, 7});
+    cube.edges.push_back({7, 4});
+    cube.edges.push_back({0, 4});
+    cube.edges.push_back({1, 5});
+    cube.edges.push_back({2, 6});
+    cube.edges.push_back({3, 7});
+
+    cube.polygons.push_back({0, 1, 2, 3});
+    cube.polygons.push_back({4, 5, 6, 7});
+    cube.polygons.push_back({0, 4, 7, 3});
+    cube.polygons.push_back({1, 2, 6, 5});
+    cube.polygons.push_back({0, 1, 5, 4});
+    cube.polygons.push_back({3, 2, 6, 7});
+
+    cube.normals.push_back(Point3D(0, 0, 1));
+    cube.normals.push_back(Point3D(0, 0, -1));
+    cube.normals.push_back(Point3D(-1, 0, 0));
+    cube.normals.push_back(Point3D(1, 0, 0));
+    cube.normals.push_back(Point3D(0, 1, 0));
+    cube.normals.push_back(Point3D(0, -1, 0));
+
+    cube.colors.push_back(RGBcolor(255, 0, 0));
+    cube.colors.push_back(RGBcolor(255, 165, 0));
+    cube.colors.push_back(RGBcolor(0, 255, 0));
+    cube.colors.push_back(RGBcolor(0, 0, 255));
+    cube.colors.push_back(RGBcolor(255, 255, 255));
+    cube.colors.push_back(RGBcolor(255, 255, 0));
+
+    return cube;
+}
 Object newPlane(float length, Ray r){
     Object plane = Object();
     plane.center = r.p1;
     Point3D c = plane.center;
     float t = length/2;
     vector<Point3D> p(4);
-    p[0] = Point3D(c.x - t, c.y - t, c.z + t); // 4
-    p[1] = Point3D(c.x + t, c.y - t, c.z + t); // 3
-    p[2] = Point3D(c.x + t, c.y - t, c.z - t);
-    p[3] = Point3D(c.x - t, c.y - t, c.z - t);
+    p[0] = Point3D(c.x - t, c.y, c.z + t);
+    p[1] = Point3D(c.x + t, c.y, c.z + t); 
+    p[2] = Point3D(c.x + t, c.y, c.z - t);
+    p[3] = Point3D(c.x - t, c.y, c.z - t);
     plane.points = p;
-    // vertexArray = {0, 1, 2, 2, 1, 4}
 
     plane.edges.push_back({0, 1});
     plane.edges.push_back({1, 2});
@@ -134,7 +226,7 @@ Object newPlane(float length, Ray r){
 
     plane.normals.push_back(r.p2 - r.p1);
 
-    plane.colors.push_back(RGBcolor(rand()%255, rand()%255, rand()%255));
+    plane.colors.push_back(RGBcolor(255, 255, rand()%150 + 50));
 
     return plane;
 }
@@ -177,3 +269,5 @@ void points_to_pixel(vector<vector<Point>> fill_points, Point3D view_point, Fram
         }
     }
 }
+
+// 

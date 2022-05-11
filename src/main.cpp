@@ -79,6 +79,7 @@ void basic_inits(){
 }
 
 void show_text(string s, Point p, float size, TTF_Font* f) {
+	return;
 	if (s.size() == 0) return;
 	SDL_Surface* text;
 	SDL_Texture* text_texture;
@@ -163,14 +164,14 @@ void get_old_objects(){
 
 void set_objects(vector<Object> &objv ) {
 	// request objects
-	// objv.push_back(newCube());
-	for (int i = 0; i < 10; i++){
-		for (int j = 0; j < 10; j++){
+	objv.push_back(newCube());
+
+	for (int i = -10; i < 10; i++){
+		for (int j = -10; j < 10; j++){
 			objv.push_back(newPlane(1, Ray(Point3D(i,-1,j), Point3D(i,0,j))));
 		}
 	}
-
-	obj_2d = vector<Object2D>(objv.size());
+	objv.push_back(newPlane(1, Ray(Point3D(0, 0, 0), Point3D(0, 2, 0))));
 }
 
 void process_projection(Object obj, int index){
@@ -235,17 +236,14 @@ void process_projection(Object obj, int index){
 	}
 }
 
-void process_projection_using_normal(vector<Object> obj_vector)
+void process_projection_using_normal(vector<Object> obj_vector, vector<vector<float>> sorted_obj_index)
 {
 	// 2d object 'obj' to 2d object 'tempobj'
 	int index=0;
-	for(auto&obj:obj_vector){
-		
-		if ((obj.center - view_point).dot_product(view_ray.p2 - view_ray.p1) < 0 ){
-			obj_2d[index] = Object2D();
-			continue;
-		}
-		obj_2d[index] = obj.object_to_2d(view_window, view_point);
+	obj_2d = vector<Object2D>(objs.size());
+	for (auto &i_obj : sorted_obj_index)
+	{
+		obj_2d[index] = obj_vector[ (float) i_obj[1]].object_to_2d(view_window, view_point, view_ray);
 		index++;
 	}
 
@@ -258,16 +256,18 @@ void process_projection_using_normal(vector<Object> obj_vector)
 	// writing to sm by filling 2d polygons (screen memory)
 	for (int obji = 0; obji < obj_2d.size(); obji++)
 	{
+		int obj_3d_i = sorted_obj_index[obji][1];
 		// for each 2d object:
 		for (int pi = 0; pi < obj_2d[obji].polygons.size(); pi++)
 		{
 			// for each polygon in the 2d object:
 
 			// if polygon not facing us, skip
-			if (objs[obji].normals[pi].dot_product( view_point - objs[obji].points[ objs[obji].polygons[pi][0] ] ) < 0){
+			if (objs[obj_3d_i].normals[pi].dot_product(view_point - objs[obj_3d_i].points[objs[obj_3d_i].polygons[pi][0]]) < 0)
+			{
 				continue;
 			}
-			
+
 			fill_points = vector<vector<Point>>(0);
 			// lists of points for filling the 2d polygon (can't pass direct polygon as it has point index instead of actual points)
 			points_tmp = vector<Point>(0);
@@ -368,12 +368,17 @@ void recalculate()
 	// clip partial lines in 2d and add to in vector
 	clipped_lines = clip(screen_lines, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
 	// clipped_lines = screen_lines;
-
-	for (int obji = 0; obji < objs.size(); obji++)
-	{
+	
+	// sort objects
+	vector<vector<float>> object_order;
+	for (int i = 0; i < objs.size(); i++){
+		object_order.push_back({(objs[i].center - view_point).len(), (float)i});
 	}
+	sort(object_order.begin(), object_order.end());
+	reverse(object_order.begin(), object_order.end());
+
 	long long t1 = SDL_GetTicks64();
-	process_projection_using_normal(objs);
+	process_projection_using_normal(objs, object_order);
 	long long t2 = SDL_GetTicks64();
 	cout << "TIME : " << (t2 - t1) << endl;
 }
@@ -463,7 +468,7 @@ void clip_test(Object2D o){
 	mid_point_line_draw(sm, temp_pts[0], temp_pts[3], RGBcolor(255), 0);
 
 	Frame f = Frame(Ray(Point3D(0, 0, -1), Point3D()), 1, 1, Ray(Point3D(0, 0, 0), Point3D(0, 1, 0)));
-	Object2D oo = newPlane(1, Ray(Point3D(0, -1, 0), Point3D(0, 0, 0))).object_to_2d(f, Point3D(0, 0, -2));
+	Object2D oo = newPlane(1, Ray(Point3D(0, -1, 0), Point3D(0, 0, 0))).object_to_2d(f, Point3D(0, 0, -2), Ray(Point3D(0, 0, -2), Point3D(0, 0, 0)));
 	oo.points = {
 		Point(100, 100),
 		Point(200, 300),
@@ -489,7 +494,7 @@ void clip_test(Object2D o){
 }
 
 int main(int argv, char** args){
-	
+
 	basic_inits();
 
 	set_objects(objs);
@@ -498,7 +503,7 @@ int main(int argv, char** args){
 	get_old_objects();
 	
 	//viewing position
-	view_point = Point3D(0,0,5);
+	view_point = Point3D(0,0,0.6);
 	view_ray = Ray(view_point, view_point + Point3D(watch_theta,watch_phi));
 	view_ray.unitize();
 	view_ray.p1 = view_ray.p1 + view_point;
@@ -588,6 +593,9 @@ int main(int argv, char** args){
 			}
 		}
 
+		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0, 0XFF);
+		SDL_RenderClear(renderer);
+
 		handle_input();
 
 		// draw view lines vector on screen.
@@ -595,11 +603,10 @@ int main(int argv, char** args){
 			mid_point_line_draw(sm, clipped_lines[i].first[0], clipped_lines[i].first[1], clipped_lines[i].second, 0);
 		}
 
+
 		//text
 		text_overlay();
 
-		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0, 0XFF);
-		SDL_RenderClear(renderer);
 		sm.renderer(renderer);
 		SDL_RenderPresent(renderer);
 		

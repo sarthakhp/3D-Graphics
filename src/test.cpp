@@ -1,4 +1,3 @@
-#include <SDL_headers/SDL.h>
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -9,30 +8,19 @@
 #include <climits>
 #include <bits/stdc++.h>
 
-//
-#include <input_handler.h>
-#include <3d.h>
-#include <2d.h>
-#include <myHeader/Object.h>
-#include <myHeader/values.h>
 using namespace std;
 
 int main(){
 
-    Frame f = Frame(Ray(Point3D(0, 0, -1), Point3D()), 1, 1, Ray(Point3D(0, 0, 0), Point3D(0, 1, 0)));
-    f.p1.print(1);
-    Object2D o = newPlane().object_to_2d(f, Point3D(0, 0, -2));
-    
-    for (auto&i:o.points){
-        i.print(1);
+    vector<vector<int>> v = {
+        {3, 1},
+        {2, 2},
+        {1, 3},
+        {4, 4},
+    };
+    sort(v.begin(), v.end());
+    for (int i = 0; i < v.size(); i++){
+        cout << v[i][0] << " " << v[i][1] << endl;
     }
-    
-    
-    
-    int somen = 0;
-    cout << "press any key..."; 
-    cin >> somen;
-    return 0;
-
     return 0;
 }
