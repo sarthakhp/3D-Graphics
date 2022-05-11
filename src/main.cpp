@@ -90,7 +90,6 @@ void show_text(string s, Point p, float size, TTF_Font* f) {
 
 	text = TTF_RenderText_Solid(f, s.c_str(), color);
 	font_w = (float)font_h * ((float)text->w / (float)text->h);
-	// TTF_SizeText();
 
 	if (!text) {
 		cout << "Failed to render text: " << TTF_GetError() << endl;
@@ -101,6 +100,7 @@ void show_text(string s, Point p, float size, TTF_Font* f) {
 	dest = { (int)floor(p.x), (int)floor(p.y), font_w, font_h };
 	SDL_RenderCopy(renderer, text_texture, NULL, &dest);
 
+	SDL_FreeSurface(text);
 	SDL_DestroyTexture(text_texture);
 }
 
@@ -610,9 +610,6 @@ int main(int argv, char** args){
 		for (int i = 0; i < clipped_lines.size(); i++){
 			mid_point_line_draw(sm, clipped_lines[i].first[0], clipped_lines[i].first[1], clipped_lines[i].second, 0);
 		}
-
-		// clipping test:
-		// clip_test(o);
 
 		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0, 0XFF);
 		SDL_RenderClear(renderer);
