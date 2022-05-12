@@ -245,16 +245,39 @@ Object2D Object2D::clip_object(Point window){
 	
 	return ans_obj;
 }
-Object2D Object2D::clip_object_2(Point window)
+Object2D Object2D::clip_object_2(const Point &window)
 {
-	Object2D obj1, obj2, obj3, ans_obj;
-	vector<int> p1,  p2, p3, p4, ans_p;
+	Object2D ans_obj;
+	vector<int> p1,  p2, p3, p4;
 	vector<Point> points1, points2, points3, points4;
 	ans_obj.colors = this->colors;
-	int c = 0;
+
+	// calculate x_max, x_min, y_max, y_min
+	float x_max = INT_MIN, x_min = INT_MAX, y_max = INT_MIN, y_min = INT_MAX;
+
 	for (auto &pi : this->polygons)
 	{
-		c++;
+		// // optimization for polygon fully inside frame 
+		for (auto&pts:pi){
+			x_max = max (this->points[pts].x, x_max);
+			x_min = min(this->points[pts].x, x_min);
+			y_max = max(this->points[pts].y, y_max);
+			y_min = min(this->points[pts].y, y_min);
+		}
+		if (x_min >= 0 && x_max <= window.x && y_min >= 0 && y_max <= window.y){
+			// for (auto &i : pi)
+			// {
+			// 	i += ans_obj.points.size();
+			// }
+			ans_obj.polygons.push_back(pi);
+			for (auto &pts : pi)
+			{
+				ans_obj.points.push_back(this->points[pts]);
+			}
+			continue;
+		}
+		// ---
+
 		p1 = {};
 		points1 = {};
 		// for line x = 0

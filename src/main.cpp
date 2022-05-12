@@ -54,8 +54,8 @@ long long int tempt;
 
 int movement_mode = 0;
 
-Point3D light_source;
-float ambient_light, light_source_intensity;
+vector<LightSource> light_sources;
+float ambient_light;
 
 void basic_inits(){
 
@@ -182,22 +182,29 @@ void init_world_rules()
 	view_window = Frame(view_ray, 1, 1, up);
 
 	// light
-	light_source = Point3D(8, 5, 0);
-	light_source_intensity = 0.7;
+	light_sources = {LightSource(Point3D(8, 5, 8), 0.8),
+					 LightSource(Point3D(-8, 5, -8), 0.8)};
 	ambient_light = 0.3;
 }
 
 void set_objects(vector<Object> &objv ) {
-	// request objects
+	// getting objects from object class
+
+	// cubes
 	objv.push_back(newCube(2, Point3D()));
 	objv.push_back(newCube(2, Point3D(6,0,6)));
 	objv.push_back(newCube(2, Point3D(-6, 0, 6)));
 	objv.push_back(newCube(2, Point3D(6, 0, -6)));
 	objv.push_back(newCube(2, Point3D(-6, 0, -6)));
 
-	objv.push_back(newCube(0.2, RGBcolor(255), light_source));
-	objv.back().self_luminious = true;
+	// light sources
+	for (auto&ls:light_sources){
+		ls.p.print(1);
+		objv.push_back(newCube(0.2, RGBcolor(255), ls.p));
+		objv.back().self_luminious = true;
+	}
 
+	// planes
 	for (int i = -10; i < 10; i++){
 		for (int j = -10; j < 10; j++){
 			// , 0, rand() % 150 + 50
@@ -205,7 +212,6 @@ void set_objects(vector<Object> &objv ) {
 			objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, -3, j)), RGBcolor(255)));
 		}
 	}
-	// objv.push_back(newPlane(1, Ray(Point3D(3, 0, 4), Point3D(0, 2, 0))));
 
 }
 
@@ -273,22 +279,24 @@ void process_projection(Object obj, int index){
 
 void process_projection_using_normal(vector<Object> obj_vector, vector<vector<float>> sorted_obj_index)
 {
+
 	// 2d object 'obj' to 2d object 'tempobj'
 	int index=0;
 	obj_2d = vector<Object2D>(objs.size());
 	for (auto &i_obj : sorted_obj_index)
 	{
 		obj_2d[index] = obj_vector[ (float) i_obj[1]].object_to_2d(view_window, view_point, view_ray);
-		obj_2d[index].colors = obj_vector[ (float) i_obj[1]].illumination(ambient_light, light_source, light_source_intensity);
+		obj_2d[index].colors = obj_vector[ (float) i_obj[1]].illumination(ambient_light, light_sources);
 
 		index++;
 	}
+
 
 	// clipping the 2d objects
 	for (auto&obj_2d_i:obj_2d){
 		obj_2d_i = obj_2d_i.clip_object_2(Point(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
 	}
-	
+
 
 	// writing to sm by filling 2d polygons (screen memory)
 	for (int obji = 0; obji < obj_2d.size(); obji++)
@@ -319,6 +327,7 @@ void process_projection_using_normal(vector<Object> obj_vector, vector<vector<fl
 			
 		}
 	}
+
 }
 
 void recalculate()
@@ -417,7 +426,7 @@ void recalculate()
 	long long t1 = SDL_GetTicks64();
 	process_projection_using_normal(objs, object_order);
 	long long t2 = SDL_GetTicks64();
-	cout << "TIME : " << (t2 - t1) << endl;
+	// cout << "TIME : " << (t2 - t1) << endl;
 }
 
 void handle_input()
@@ -647,7 +656,7 @@ int main(int argv, char** args){
 			frame_rate = ceil(((float)(frame_count*1000))/(float)time_diff);
 			frame_count = 0;
 			old_time = new_time;
-			cout << frame_rate << endl;
+			// cout << frame_rate << endl;
 		}
 		movement_speed = (std_movement_speed*(float)STD_FPS)/((float)frame_rate);
 		turning_speed = (std_turning_speed*((float)STD_FPS))/((float)frame_rate);

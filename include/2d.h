@@ -12,7 +12,6 @@
 #include <SDL_headers/SDL_ttf.h>
 using namespace std;
 
-
 struct Point {
 	float x;
 	float y;
@@ -122,7 +121,7 @@ public:
     // methods
     Object2D();
     Object2D clip_object(Point window_2d);
-    Object2D clip_object_2(Point window);
+    Object2D clip_object_2(const Point &window);
 };
 
 void mid_point_line_draw(Screen_memory &sm, Point &start, Point &end, const RGBcolor &line_color, int erase_mode);

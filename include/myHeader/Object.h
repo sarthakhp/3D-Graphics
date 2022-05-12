@@ -50,7 +50,7 @@ public:
     // methods
     Object();
     Object2D object_to_2d(Frame view_window, Point3D view_point, Ray normal);
-    vector<RGBcolor> illumination(float ambient_light, Point3D light_source, float light_source_intensity);
+    vector<RGBcolor> illumination(float ambient_light, vector<LightSource> light_source);
 
     // equation
     // circle

@@ -3,3 +3,5 @@ only function defination in .h file
 semicolon after class
 
 change screen memory to simple 2d int vector in mid point line draw of temp_sm, for fast polygon filling
+
+optimation section in clipping: a for loop is commented but it may not work sometimes, so have to uncomment it and solve the problem

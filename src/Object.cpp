@@ -91,7 +91,7 @@ Object2D Object::object_to_2d(Frame view_window, Point3D view_point, Ray normal)
 
     return tempobj;
 }
-vector<RGBcolor> Object::illumination(float ambient_light, Point3D light_source, float lsi)
+vector<RGBcolor> Object::illumination(float ambient_light, vector< LightSource> light_source)
 {
     if (this->self_luminious){
         return this->colors;
@@ -102,16 +102,20 @@ vector<RGBcolor> Object::illumination(float ambient_light, Point3D light_source,
     Point3D light_to_poly;
     for (auto&ni:this->normals){
         intensity = ambient_light;
-        light_to_poly = (light_source - this->points[this->polygons[index][0]]);
-        cos_theta = ni.unitize().dot_product((light_source - this->points[this->polygons[index][0]]).unitize());
-        if (cos_theta <= 0){
-            cos_theta = 0;
+
+        for (auto&ls:light_source){
+            light_to_poly = (ls.p - this->points[this->polygons[index][0]]);
+            cos_theta = ni.unitize().dot_product((ls.p - this->points[this->polygons[index][0]]).unitize());
+            if (cos_theta <= 0){
+                cos_theta = 0;
+            }
+
+            // formula for fading of intensity accourding to distance of light source
+            closeness = 1 / (1 + pow((light_to_poly.len()/10),2));
+            intensity += (ls.intensity*cos_theta*closeness);
         }
 
-        // formula for fading of intensity accourding to distance of light source
-        closeness = 1 / (1 + pow((light_to_poly.len()/4),2));
 
-        intensity += (lsi*cos_theta*closeness);
         if (intensity > 1) intensity = 1;
         RGBcolor c_t = this->colors[index];
         ans_colors.push_back(RGBcolor((c_t.r * intensity),

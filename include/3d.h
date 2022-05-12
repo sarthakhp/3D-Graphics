@@ -90,6 +90,15 @@ public:
     void set(vector<Point3D *> v);
 };
 
+class LightSource{
+public:
+    Point3D p;
+    float intensity;
+
+    LightSource();
+    LightSource(Point3D location, float intensity);
+};
+
 Point3D find_intersection(Frame f, Ray r);
 Point3D get_from_2d(Frame f, Point p, int w, int h);
 

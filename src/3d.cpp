@@ -232,6 +232,16 @@ Polygon3D::Polygon3D(vector<Point3D *> v){
     }
 }
 
+LightSource::LightSource(){
+    p = Point3D();
+    intensity = 1;
+}
+LightSource::LightSource(Point3D p, float light_intensity)
+{
+    this->p = p;
+    this->intensity = light_intensity;
+}
+
 Point3D find_intersection(Frame f, Ray r){
     Point3D n = (f.p1 - f.p2).cross_product(f.p3 - f.p2).unitize(),
          a = f.p1, 
