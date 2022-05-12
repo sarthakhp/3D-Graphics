@@ -27,7 +27,8 @@ bool isRunning = true;
 Screen_memory sm, init_sm, temp_sm;
 vector<Point3D> all_points;
 Point3D view_point,watch_direction;
-float watch_theta = 0, watch_phi = PI, turning_speed = 0, std_turning_speed = 0.02;
+// theta = zy plane angle, phi = zx plane angle from z
+float watch_theta = 0-0.2, watch_phi = PI + PI/5, turning_speed = 0, std_turning_speed = 0.02;
 Ray view_ray,up;
 Frame view_window;
 vector<vector<Point3D>> intersected_points;
@@ -37,7 +38,7 @@ vector <pair<vector<Point>,RGBcolor>> screen_lines, clipped_lines;
 
 TTF_Font* f;
 Point text_slot = Point(10 + MAIN_VIEW_WIDTH, 10), init_text_slot = Point(10 + MAIN_VIEW_WIDTH, 10);
-int font_h = 30;
+int font_h;
 long long int new_time,time_diff,old_time;
 int frame_rate = STD_FPS,frame_count=0;
 float std_movement_speed = 0.11,movement_speed = 0;
@@ -53,6 +54,9 @@ long long int tempt;
 
 int movement_mode = 0;
 
+Point3D light_source;
+float ambient_light, light_source_intensity;
+
 void basic_inits(){
 
 	SDL_Init(SDL_INIT_EVERYTHING);
@@ -67,19 +71,20 @@ void basic_inits(){
 	{
 		cout << "Error initializing SDL_ttf: " << TTF_GetError() << endl;
 	}
-	f = TTF_OpenFont(FONT_PATH, 200);
+	f = TTF_OpenFont(FONT_PATH, 100);
 	if (!f)
 	{
 		cout << "Failed to load font: " << TTF_GetError() << endl;
 	}
+	font_h = 34;
 
 	sm = Screen_memory(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
 	init_sm = Screen_memory(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT, RGBcolor(0, 0, 0));
 	temp_sm = Screen_memory(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
+
 }
 
 void show_text(string s, Point p, float size, TTF_Font* f) {
-	return;
 	if (s.size() == 0) return;
 	SDL_Surface* text;
 	SDL_Texture* text_texture;
@@ -162,16 +167,46 @@ void get_old_objects(){
 	}
 }
 
+void init_world_rules()
+{
+	// viewing position
+	view_point = Point3D(14, 5, 14);
+	view_ray = Ray(view_point, view_point + Point3D(watch_theta, watch_phi));
+	view_ray.unitize();
+	view_ray.p1 = view_ray.p1 + view_point;
+	view_ray.p2 = view_ray.p2 + view_point;
+	Point3D(watch_theta, watch_phi).print(1);
+	up = Ray(view_ray.p1, view_ray.p1 + Point3D(watch_theta + ((PI) / ((float)2)), watch_phi));
+
+	// set view window
+	view_window = Frame(view_ray, 1, 1, up);
+
+	// light
+	light_source = Point3D(8, 5, 0);
+	light_source_intensity = 0.7;
+	ambient_light = 0.3;
+}
+
 void set_objects(vector<Object> &objv ) {
 	// request objects
-	objv.push_back(newCube());
+	objv.push_back(newCube(2, Point3D()));
+	objv.push_back(newCube(2, Point3D(6,0,6)));
+	objv.push_back(newCube(2, Point3D(-6, 0, 6)));
+	objv.push_back(newCube(2, Point3D(6, 0, -6)));
+	objv.push_back(newCube(2, Point3D(-6, 0, -6)));
+
+	objv.push_back(newCube(0.2, RGBcolor(255), light_source));
+	objv.back().self_luminious = true;
 
 	for (int i = -10; i < 10; i++){
 		for (int j = -10; j < 10; j++){
-			objv.push_back(newPlane(1, Ray(Point3D(i,-1,j), Point3D(i,0,j))));
+			// , 0, rand() % 150 + 50
+			objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, 0, j)), RGBcolor(255)));
+			objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, -3, j)), RGBcolor(255)));
 		}
 	}
-	objv.push_back(newPlane(1, Ray(Point3D(0, 0, 0), Point3D(0, 2, 0))));
+	// objv.push_back(newPlane(1, Ray(Point3D(3, 0, 4), Point3D(0, 2, 0))));
+
 }
 
 void process_projection(Object obj, int index){
@@ -244,6 +279,8 @@ void process_projection_using_normal(vector<Object> obj_vector, vector<vector<fl
 	for (auto &i_obj : sorted_obj_index)
 	{
 		obj_2d[index] = obj_vector[ (float) i_obj[1]].object_to_2d(view_window, view_point, view_ray);
+		obj_2d[index].colors = obj_vector[ (float) i_obj[1]].illumination(ambient_light, light_source, light_source_intensity);
+
 		index++;
 	}
 
@@ -368,7 +405,7 @@ void recalculate()
 	// clip partial lines in 2d and add to in vector
 	clipped_lines = clip(screen_lines, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
 	// clipped_lines = screen_lines;
-	
+
 	// sort objects
 	vector<vector<float>> object_order;
 	for (int i = 0; i < objs.size(); i++){
@@ -491,29 +528,21 @@ void clip_test(Object2D o){
 			mid_point_line_draw(sm, s,e , RGBcolor(0,0,255), 0 );
 		}
 	}
+
 }
 
 int main(int argv, char** args){
 
 	basic_inits();
 
+	// setting view_point, light source etc.
+	init_world_rules();
+
 	set_objects(objs);
 	
-	// Old Objects
+	// Old Objects for old method
 	get_old_objects();
-	
-	//viewing position
-	view_point = Point3D(0,0,0.6);
-	view_ray = Ray(view_point, view_point + Point3D(watch_theta,watch_phi));
-	view_ray.unitize();
-	view_ray.p1 = view_ray.p1 + view_point;
-	view_ray.p2 = view_ray.p2 + view_point;
-	Point3D(watch_theta,watch_phi).print(1);
-	up = Ray(view_ray.p1, view_ray.p1 + Point3D(watch_theta+((PI)/((float)2)),watch_phi) );
-	
-	// set view window
-	view_window = Frame(view_ray, 1, 1, up);
-
+		
 	// project in_vector to view_window and add to view_lines_vector
 	for (int i = 0; i < lines.size(); i++){
 
@@ -618,6 +647,7 @@ int main(int argv, char** args){
 			frame_rate = ceil(((float)(frame_count*1000))/(float)time_diff);
 			frame_count = 0;
 			old_time = new_time;
+			cout << frame_rate << endl;
 		}
 		movement_speed = (std_movement_speed*(float)STD_FPS)/((float)frame_rate);
 		turning_speed = (std_turning_speed*((float)STD_FPS))/((float)frame_rate);

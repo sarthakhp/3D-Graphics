@@ -53,6 +53,7 @@ Object::Object(){
     normals = vector<Point3D>(0);
     colors = vector<RGBcolor>(0);
     center = Point3D();
+    self_luminious = false;
 }
 Object2D Object::object_to_2d(Frame view_window, Point3D view_point, Ray normal){
 
@@ -90,12 +91,42 @@ Object2D Object::object_to_2d(Frame view_window, Point3D view_point, Ray normal)
 
     return tempobj;
 }
+vector<RGBcolor> Object::illumination(float ambient_light, Point3D light_source, float lsi)
+{
+    if (this->self_luminious){
+        return this->colors;
+    }
+    vector<RGBcolor> ans_colors;
+    int index = 0;
+    float cos_theta, intensity, closeness;
+    Point3D light_to_poly;
+    for (auto&ni:this->normals){
+        intensity = ambient_light;
+        light_to_poly = (light_source - this->points[this->polygons[index][0]]);
+        cos_theta = ni.unitize().dot_product((light_source - this->points[this->polygons[index][0]]).unitize());
+        if (cos_theta <= 0){
+            cos_theta = 0;
+        }
+
+        // formula for fading of intensity accourding to distance of light source
+        closeness = 1 / (1 + pow((light_to_poly.len()/4),2));
+
+        intensity += (lsi*cos_theta*closeness);
+        if (intensity > 1) intensity = 1;
+        RGBcolor c_t = this->colors[index];
+        ans_colors.push_back(RGBcolor((c_t.r * intensity),
+                                      (c_t.g * intensity),
+                                      (c_t.b * intensity)));
+        index++;
+    }
+    return ans_colors;
+}
 
 Object newCube()
 {
     Object cube = Object();
     Point3D c = cube.center;
-    float t = 0.75;
+    float t = 1;
     vector<Point3D> p(8);
     p[0] = Point3D(c.x - t, c.y + t, c.z + t); //1
     p[1] = Point3D(c.x + t, c.y + t, c.z + t); //2
@@ -149,9 +180,10 @@ Object newCube()
 
     return cube;
 }
-Object newCube(float length)
+Object newCube(float length, Point3D center)
 {
     Object cube = Object();
+    cube.center = center;
     Point3D c = cube.center;
     float t = length/2;
     vector<Point3D> p(8);
@@ -205,6 +237,60 @@ Object newCube(float length)
 
     return cube;
 }
+Object newCube(float length, RGBcolor color, Point3D center)
+{
+    Object cube = Object();
+    cube.center = center;
+    Point3D c = cube.center;
+    float t = length / 2;
+    vector<Point3D> p(8);
+    p[0] = Point3D(c.x - t, c.y + t, c.z + t); // 1
+    p[1] = Point3D(c.x + t, c.y + t, c.z + t); // 2
+    p[2] = Point3D(c.x + t, c.y - t, c.z + t); // 3
+    p[3] = Point3D(c.x - t, c.y - t, c.z + t); // 4
+    p[4] = Point3D(c.x - t, c.y + t, c.z - t);
+    p[5] = Point3D(c.x + t, c.y + t, c.z - t);
+    p[6] = Point3D(c.x + t, c.y - t, c.z - t);
+    p[7] = Point3D(c.x - t, c.y - t, c.z - t);
+    cube.points = p;
+    // vertexArray = {0, 1, 2, 2, 1, 4}
+
+    // new line ^ ^
+    // changing new branch only, i ll be gone in a minute ;-;
+
+    cube.edges.push_back({0, 1});
+    cube.edges.push_back({1, 2});
+    cube.edges.push_back({2, 3});
+    cube.edges.push_back({3, 1});
+    cube.edges.push_back({4, 5});
+    cube.edges.push_back({5, 6});
+    cube.edges.push_back({6, 7});
+    cube.edges.push_back({7, 4});
+    cube.edges.push_back({0, 4});
+    cube.edges.push_back({1, 5});
+    cube.edges.push_back({2, 6});
+    cube.edges.push_back({3, 7});
+
+    cube.polygons.push_back({0, 1, 2, 3});
+    cube.polygons.push_back({4, 5, 6, 7});
+    cube.polygons.push_back({0, 4, 7, 3});
+    cube.polygons.push_back({1, 2, 6, 5});
+    cube.polygons.push_back({0, 1, 5, 4});
+    cube.polygons.push_back({3, 2, 6, 7});
+
+    cube.normals.push_back(Point3D(0, 0, 1));
+    cube.normals.push_back(Point3D(0, 0, -1));
+    cube.normals.push_back(Point3D(-1, 0, 0));
+    cube.normals.push_back(Point3D(1, 0, 0));
+    cube.normals.push_back(Point3D(0, 1, 0));
+    cube.normals.push_back(Point3D(0, -1, 0));
+
+    for (auto&pi:cube.polygons){
+        cube.colors.push_back(color);
+    }
+    return cube;
+}
+
 Object newPlane(float length, Ray r){
     Object plane = Object();
     plane.center = r.p1;
@@ -227,6 +313,32 @@ Object newPlane(float length, Ray r){
     plane.normals.push_back(r.p2 - r.p1);
 
     plane.colors.push_back(RGBcolor(255, 255, rand()%150 + 50));
+
+    return plane;
+}
+Object newPlane(float length, Ray r, RGBcolor color)
+{
+    Object plane = Object();
+    plane.center = r.p1;
+    Point3D c = plane.center;
+    float t = length / 2;
+    vector<Point3D> p(4);
+    p[0] = Point3D(c.x - t, c.y, c.z + t);
+    p[1] = Point3D(c.x + t, c.y, c.z + t);
+    p[2] = Point3D(c.x + t, c.y, c.z - t);
+    p[3] = Point3D(c.x - t, c.y, c.z - t);
+    plane.points = p;
+
+    plane.edges.push_back({0, 1});
+    plane.edges.push_back({1, 2});
+    plane.edges.push_back({2, 3});
+    plane.edges.push_back({3, 1});
+
+    plane.polygons.push_back({0, 1, 2, 3});
+
+    plane.normals.push_back(r.p2 - r.p1);
+
+    plane.colors.push_back(color);
 
     return plane;
 }
