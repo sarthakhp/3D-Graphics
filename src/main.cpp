@@ -30,7 +30,7 @@ Screen_memory sm, init_sm, temp_sm;
 vector<Point3D> all_points;
 Point3D view_point,watch_direction;
 // theta = zy plane angle, phi = zx plane angle from z
-float watch_theta = 0-0.2, watch_phi = PI + PI/5, turning_speed = 0, std_turning_speed = 0.02;
+float watch_theta = 0, watch_phi = PI, turning_speed = 0, std_turning_speed = 0.02;
 Ray view_ray,up;
 Frame view_window;
 vector<vector<Point3D>> intersected_points;
@@ -184,7 +184,9 @@ void init_world_rules()
 	view_window = Frame(view_ray, 1, 1, up);
 
 	// light
-	light_sources = {LightSource(Point3D(8, 5, 8), 0.8)};
+	light_sources = {LightSource(Point3D(8, 5, 8), 0.8),
+					 LightSource(Point3D(8, 5, -8), 0.5),
+					 LightSource(Point3D(0, 90, 100), 10)};
 	ambient_light = 0.3;
 }
 
@@ -200,8 +202,10 @@ void set_objects(vector<Object> &objv ) {
 
 	// reading obj files
 	// objv.push_back(Object().readObject("src\\low-poly-sphere.obj"));
-	// objv.push_back(Object().readObject("src\\sphere.obj"));
-	objv.push_back(Object().readObject("src\\utah-teapot.obj"));
+	// objv.push_back(Object().readObject("src\\Objects\\sphere.obj"));
+	// objv.push_back(Object().readObject("src\\utah-teapot.obj"));
+	// objv.push_back(Object().readObject("src\\Objects\\fox.obj"));
+	// objv.push_back(Object().readObject("src\\Objects\\shoe.obj"));
 
 	// light sources
 	for (auto&ls:light_sources){
@@ -210,13 +214,13 @@ void set_objects(vector<Object> &objv ) {
 	}
 
 	// planes
-	// for (int i = -10; i < 10; i++){
-	// 	for (int j = -10; j < 10; j++){
-	// 		// , 0, rand() % 150 + 50
-	// 		objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, 0, j)), RGBcolor(255)));
-	// 		objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, -3, j)), RGBcolor(255)));
-	// 	}
-	// }
+	for (int i = -10; i < 10; i++){
+		for (int j = -10; j < 10; j++){
+			// , 0, rand() % 150 + 50
+			objv.push_back(newPlane(1, Ray(Point3D(i, -10, j), Point3D(i, 0, j)), RGBcolor(255)));
+			objv.push_back(newPlane(1, Ray(Point3D(i, -10, j), Point3D(i, -11, j)), RGBcolor(255)));
+		}
+	}
 
 }
 
@@ -357,6 +361,7 @@ void recalculate()
 
 	// set view window
 	view_window = Frame(view_ray, 1, 1, up);
+	light_sources.back().p = view_point;
 
 	// project in_vector to view_window and add to view_lines_vector
 	for (int i = 0; i < lines.size(); i++)
@@ -497,9 +502,7 @@ void handle_input()
 		view_point = view_point - ((up.p2 - up.p1) * movement_speed);
 		recalculate();
 	}
-	if (p[SDL_SCANCODE_M]){
-		movement_mode = (movement_mode + 1)%2;
-	}
+
 }
 
 void clip_test(Object2D o){
@@ -543,6 +546,20 @@ void clip_test(Object2D o){
 		}
 	}
 
+}
+
+void take_screenshot(){
+	SDL_Surface *sshot = SDL_CreateRGBSurface(0, WINDOW_WIDTH, WINDOW_HEIGHT, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+	SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_ARGB8888, sshot->pixels, sshot->pitch);
+	string ss_name = "src/Screenshots/3d-view_" + to_string(rand()) + ".bmp";
+	if ( SDL_SaveBMP(sshot, ss_name.c_str()) ){
+		cout << SDL_GetError() << endl;
+		cout << "Screen shot ERROR" << endl;
+	}
+	else{
+		cout << "screenshot taken : " << ss_name << endl;
+	}
+	SDL_FreeSurface(sshot);
 }
 
 int main(int argv, char** args){
@@ -631,7 +648,16 @@ int main(int argv, char** args){
 					if (event.key.keysym.sym == SDLK_ESCAPE){
 						isRunning = false;
 					}
-					
+					if (event.key.keysym.sym == SDLK_m)
+					{
+						movement_mode = (movement_mode + 1) % 2;
+					}
+					if (event.key.keysym.sym == SDLK_p)
+					{
+						take_screenshot();
+					}
+					break;
+				default:
 					break;
 			}
 		}
@@ -663,8 +689,9 @@ int main(int argv, char** args){
 			old_time = new_time;
 			// cout << frame_rate << endl;
 		}
-		movement_speed = (std_movement_speed*(float)STD_FPS)/((float)frame_rate);
 		turning_speed = (std_turning_speed*((float)STD_FPS))/((float)frame_rate);
+		// movement_speed = (std_movement_speed*(float)STD_FPS)/((float)frame_rate);
+		movement_speed = turning_speed * (view_point.len());
 	}
 	
 	SDL_DestroyRenderer(renderer);

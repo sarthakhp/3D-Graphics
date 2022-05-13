@@ -178,14 +178,12 @@ Object Object::readObject(string path){
         {
             this->polygons.push_back({});
             vn.push_back({});
-            // this->normals.push_back(Point3D());
             string s;
             while (ss >> s)
             {
                 vector<string> parts = split_string(s, '/');
                 this->polygons.back().push_back(stoi(parts[0]) - 1);
                 vn.back().push_back(stoi(parts[2]) - 1);
-                // this->normals.back() = this->normals.back() + vn[stoi(parts[2])];
             }
         }
     }
@@ -195,12 +193,6 @@ Object Object::readObject(string path){
     int index = 0;
     for (auto&pi:this->polygons){
         Point3D ni = (this->points[pi[2]] - this->points[pi[0]]).cross_product(this->points[pi[1]] - this->points[pi[0]]);
-        if (index == 2){
-            (this->points[pi[2]] - this->points[pi[0]]).print(1);
-            (this->points[pi[1]] - this->points[pi[0]]).print(1);
-            ni.print(1);
-            cout << endl;
-        }
 
         float dot_p = ni.dot_product(vn_points[ vn[index][0] ]);
 
