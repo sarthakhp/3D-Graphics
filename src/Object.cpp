@@ -8,6 +8,8 @@
 #include <map>
 #include <climits>
 #include <SDL_headers/SDL_ttf.h>
+#include <fstream>
+#include <sstream>
 
 // my headers
 #include <input_handler.h>
@@ -44,6 +46,18 @@ void temp_insert_3d_point(vector<Point> &pts, Point p, vector<int> &poly)
         pts.push_back(p);
         poly.push_back(pts.size() - 1);
     }
+}
+vector<string> split_string(string original_string, char delimiter)
+{
+    std::string tmp = "";
+    std::vector<std::string> parts;
+
+    std::istringstream iss(original_string);
+    while (std::getline(iss, tmp, delimiter))
+    {
+        parts.push_back(tmp);
+    }
+    return parts;
 }
 
 Object::Object(){
@@ -124,6 +138,79 @@ vector<RGBcolor> Object::illumination(float ambient_light, vector< LightSource> 
         index++;
     }
     return ans_colors;
+}
+Object Object::readObject(string path){
+    *this = Object();
+
+    ifstream inFile;
+    inFile.open(path);
+    if (!inFile)
+    {
+        printf("Impossible to open the file !\n");
+        return *this;
+    }
+
+    string line;
+    vector<vector<int>> vn;
+    vector<Point3D> vn_points;
+    Point3D p;
+    while (getline(inFile, line))
+    {
+        std::stringstream ss{line};
+        string s;
+        ss >> s;
+        if (s == "v")
+        {
+            ss >> p.x;
+            ss >> p.y;
+            ss >> p.z;
+            this->points.push_back(p);
+        }
+        else if (s == "vn")
+        {
+            ss >> p.x;
+            ss >> p.y;
+            ss >> p.z;
+            
+            vn_points.push_back(p);            
+        }
+        else if (s == "f")
+        {
+            this->polygons.push_back({});
+            vn.push_back({});
+            // this->normals.push_back(Point3D());
+            string s;
+            while (ss >> s)
+            {
+                vector<string> parts = split_string(s, '/');
+                this->polygons.back().push_back(stoi(parts[0]) - 1);
+                vn.back().push_back(stoi(parts[2]) - 1);
+                // this->normals.back() = this->normals.back() + vn[stoi(parts[2])];
+            }
+        }
+    }
+
+    cout << this->points.size() << endl;
+
+    int index = 0;
+    for (auto&pi:this->polygons){
+        Point3D ni = (this->points[pi[2]] - this->points[pi[0]]).cross_product(this->points[pi[1]] - this->points[pi[0]]);
+        if (index == 2){
+            (this->points[pi[2]] - this->points[pi[0]]).print(1);
+            (this->points[pi[1]] - this->points[pi[0]]).print(1);
+            ni.print(1);
+            cout << endl;
+        }
+
+        float dot_p = ni.dot_product(vn_points[ vn[index][0] ]);
+
+        this->normals.push_back( (dot_p >= 0) ? ni : Point3D() - ni );
+        // this->colors.push_back(RGBcolor(rand() % 255, rand() % 255, rand() % 255));
+        this->colors.push_back(RGBcolor(0, 0, 255));
+
+        index++;
+    }
+    return *this;
 }
 
 Object newCube()

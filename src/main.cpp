@@ -9,6 +9,8 @@
 #include <climits>
 #include <SDL_headers/SDL_ttf.h>
 #include <bits/stdc++.h>
+#include <filesystem>
+#include <unistd.h>
 
 // 
 #include <input_handler.h>
@@ -170,7 +172,7 @@ void get_old_objects(){
 void init_world_rules()
 {
 	// viewing position
-	view_point = Point3D(14, 5, 14);
+	view_point = Point3D(0, 0, 5);
 	view_ray = Ray(view_point, view_point + Point3D(watch_theta, watch_phi));
 	view_ray.unitize();
 	view_ray.p1 = view_ray.p1 + view_point;
@@ -182,8 +184,7 @@ void init_world_rules()
 	view_window = Frame(view_ray, 1, 1, up);
 
 	// light
-	light_sources = {LightSource(Point3D(8, 5, 8), 0.8),
-					 LightSource(Point3D(-8, 5, -8), 0.8)};
+	light_sources = {LightSource(Point3D(8, 5, 8), 0.8)};
 	ambient_light = 0.3;
 }
 
@@ -191,27 +192,31 @@ void set_objects(vector<Object> &objv ) {
 	// getting objects from object class
 
 	// cubes
-	objv.push_back(newCube(2, Point3D()));
-	objv.push_back(newCube(2, Point3D(6,0,6)));
-	objv.push_back(newCube(2, Point3D(-6, 0, 6)));
-	objv.push_back(newCube(2, Point3D(6, 0, -6)));
-	objv.push_back(newCube(2, Point3D(-6, 0, -6)));
+	// objv.push_back(newCube(2, Point3D()));
+	// objv.push_back(newCube(2, Point3D(6,0,6)));
+	// objv.push_back(newCube(2, Point3D(-6, 0, 6)));
+	// objv.push_back(newCube(2, Point3D(6, 0, -6)));
+	// objv.push_back(newCube(2, Point3D(-6, 0, -6)));
+
+	// reading obj files
+	// objv.push_back(Object().readObject("src\\low-poly-sphere.obj"));
+	// objv.push_back(Object().readObject("src\\sphere.obj"));
+	objv.push_back(Object().readObject("src\\utah-teapot.obj"));
 
 	// light sources
 	for (auto&ls:light_sources){
-		ls.p.print(1);
 		objv.push_back(newCube(0.2, RGBcolor(255), ls.p));
 		objv.back().self_luminious = true;
 	}
 
 	// planes
-	for (int i = -10; i < 10; i++){
-		for (int j = -10; j < 10; j++){
-			// , 0, rand() % 150 + 50
-			objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, 0, j)), RGBcolor(255)));
-			objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, -3, j)), RGBcolor(255)));
-		}
-	}
+	// for (int i = -10; i < 10; i++){
+	// 	for (int j = -10; j < 10; j++){
+	// 		// , 0, rand() % 150 + 50
+	// 		objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, 0, j)), RGBcolor(255)));
+	// 		objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, -3, j)), RGBcolor(255)));
+	// 	}
+	// }
 
 }
 

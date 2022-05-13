@@ -45,12 +45,13 @@ public:
     // luminous
     bool self_luminious;
 
-    Point3D center; 
+    Point3D center;
 
     // methods
     Object();
     Object2D object_to_2d(Frame view_window, Point3D view_point, Ray normal);
     vector<RGBcolor> illumination(float ambient_light, vector<LightSource> light_source);
+    Object readObject(string path);
 
     // equation
     // circle
