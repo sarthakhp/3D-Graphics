@@ -156,7 +156,7 @@ void text_overlay() {
 }
 
 void get_old_objects(){
-	// objects.insert({"cube", Cube().lines});
+	objects.insert({"cube", Cube().lines});
 	// objects.insert({"axes", Axes().lines});
 	
 
@@ -434,7 +434,7 @@ void recalculate()
 	reverse(object_order.begin(), object_order.end());
 
 	long long t1 = SDL_GetTicks64();
-	process_projection_using_normal(objs, object_order);
+	// process_projection_using_normal(objs, object_order);
 	long long t2 = SDL_GetTicks64();
 	// cout << "TIME : " << (t2 - t1) << endl;
 }
@@ -671,7 +671,6 @@ int main(int argv, char** args){
 		for (int i = 0; i < clipped_lines.size(); i++){
 			mid_point_line_draw(sm, clipped_lines[i].first[0], clipped_lines[i].first[1], clipped_lines[i].second, 0);
 		}
-
 
 		//text
 		text_overlay();
