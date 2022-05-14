@@ -50,3 +50,22 @@ for (int i = 0; i < obj.points.size(); i++)
 	cout <<endl << "press any key...";
 	// cin >> somen;
 	// return 0;
+
+
+
+//// OLD functions : 
+
+void get_old_objects(){
+	// objects.insert({"cube", Cube().lines});
+	// objects.insert({"axes", Axes().lines});
+	
+
+	for (auto &i : objects)
+	{
+		for (int j = 0; j < i.second.size(); j++)
+		{
+			lines.push_back(i.second[j]);
+		}
+	}
+}
+
