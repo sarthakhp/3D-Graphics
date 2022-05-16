@@ -9,6 +9,8 @@
 #include <fstream>
 #include <bits/stdc++.h>
 
+#define PI 3.14159265359
+
 using namespace std;
 
 vector<string> split_string(string original_string, char delimiter){
@@ -25,58 +27,7 @@ vector<string> split_string(string original_string, char delimiter){
 
 int main(){
 
-    string path = "cube.obj";
-    ifstream inFile;
-
-    inFile.open(path);
-    if (!inFile){
-        printf("Impossible to open the file !\n");
-        return false;
-    }
-
-    int c=0;
-    string line;
-    vector<vector<int>> v, vn, p;
-    while (getline(inFile, line))
-    {
-        c++;
-        std::stringstream ss{line};
-        string s;
-        ss >> s;
-        if (s == "v"){
-            v.push_back({});
-            int a;
-            while (ss >> a){
-                v.back().push_back(a);
-            }
-        }
-        else if (s == "vn")
-        {
-            vn.push_back({});
-            int a;
-            while (ss >> a)
-            {
-                vn.back().push_back(a);
-            }
-        }
-        else if (s == "f")
-        {
-            p.push_back({});
-            string s;
-            while (ss >> s)
-            {
-                vector<string> parts = split_string(s,'/');
-                p.back().push_back( stoi( parts[0] ) );
-            }
-        }
-    }
-    for (auto&vi:p){
-        for (auto&j:vi){
-            cout << j << " ";
-        }
-        cout << endl;
-    }
-    cout << "hello" << endl;
+    cout << - sin(PI/4) + cos (PI/4) << endl;
 
     return 0;
 }

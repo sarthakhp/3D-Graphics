@@ -202,6 +202,57 @@ Object Object::readObject(string path){
 
         index++;
     }
+    this->center = Point3D();
+    return *this;
+}
+Object Object::move(Point3D move_by)
+{
+    this->center = this->center + move_by;
+    for (auto &p : this->points)
+    {
+        p = p + move_by;
+    }
+    return *this;
+}
+Object Object::rotate(float theta_yz, float phi_xz){
+    Point3D original_center = this->center;
+    // this->move(Point3D() - this->center);
+
+    
+    for (auto &p : this->points)
+    {
+        Point3D tp = p;
+
+        // first around x axis (theta_yz):
+        p.y = (tp.y * cos(theta_yz)) - (tp.z * sin(theta_yz));
+        p.z = (tp.y * sin(theta_yz)) + (tp.z * cos(theta_yz));
+
+        // around y axis phi_xz
+        p.x = (tp.x * cos(phi_xz)) + (tp.z * sin(phi_xz));
+        p.z = -(tp.x * sin(phi_xz)) + (tp.z * cos(phi_xz));
+    }
+
+    // normals:
+    for (auto&n:this->normals){
+
+        Point3D tn = n;
+        
+        // around x axis
+        n.y = (tn.y * cos(theta_yz)) - (tn.z * sin(theta_yz));
+        n.z = (tn.y * sin(theta_yz)) + (tn.z * cos(theta_yz));
+
+        // around y axis
+        n.x = (tn.x * cos(phi_xz)) + (tn.z * sin(phi_xz));
+        n.z = -(tn.x * sin(phi_xz)) + (tn.z * cos(phi_xz));
+
+    }
+    for (auto &n : this->normals)
+    {
+        
+    }
+
+    // this->move(original_center);
+
     return *this;
 }
 

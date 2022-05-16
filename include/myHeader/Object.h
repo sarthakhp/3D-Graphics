@@ -42,16 +42,18 @@ public:
     // colors
     vector<RGBcolor> colors;
 
+    Point3D center;
+
     // luminous
     bool self_luminious;
-
-    Point3D center;
 
     // methods
     Object();
     Object2D object_to_2d(Frame view_window, Point3D view_point, Ray normal);
     vector<RGBcolor> illumination(float ambient_light, vector<LightSource> light_source);
     Object readObject(string path);
+    Object move(Point3D move_by);
+    Object rotate(float theta_yz, float phi_zx);
 
     // equation
     // circle

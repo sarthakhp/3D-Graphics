@@ -29,6 +29,7 @@ bool isRunning = true;
 Screen_memory sm, init_sm, temp_sm;
 vector<Point3D> all_points;
 Point3D view_point,watch_direction;
+
 // theta = zy plane angle, phi = zx plane angle from z
 float watch_theta = 0, watch_phi = PI, turning_speed = 0, std_turning_speed = 0.02;
 Ray view_ray,up;
@@ -155,20 +156,6 @@ void text_overlay() {
 	text_slot = init_text_slot;
 }
 
-void get_old_objects(){
-	// objects.insert({"cube", Cube().lines});
-	// objects.insert({"axes", Axes().lines});
-	
-
-	for (auto &i : objects)
-	{
-		for (int j = 0; j < i.second.size(); j++)
-		{
-			lines.push_back(i.second[j]);
-		}
-	}
-}
-
 void init_world_rules()
 {
 	// viewing position
@@ -201,7 +188,8 @@ void set_objects(vector<Object> &objv ) {
 	// objv.push_back(newCube(2, Point3D(-6, 0, -6)));
 
 	// reading obj files
-	// objv.push_back(Object().readObject("src\\low-poly-sphere.obj"));
+	objv.push_back(Object().readObject("src\\Objects\\cube.obj").rotate(0,PI/4));
+	// objv.push_back(Object().readObject("src\\Objects\\low-poly-sphere.obj").move(Point3D(10,100,10)));
 	// objv.push_back(Object().readObject("src\\Objects\\sphere.obj"));
 	// objv.push_back(Object().readObject("src\\utah-teapot.obj"));
 	// objv.push_back(Object().readObject("src\\Objects\\fox.obj"));
@@ -214,8 +202,8 @@ void set_objects(vector<Object> &objv ) {
 	}
 
 	// planes
-	for (int i = -10; i < 10; i++){
-		for (int j = -10; j < 10; j++){
+	for (int i = -5; i < 5; i++){
+		for (int j = -5; j < 5; j++){
 			// , 0, rand() % 150 + 50
 			objv.push_back(newPlane(1, Ray(Point3D(i, -10, j), Point3D(i, 0, j)), RGBcolor(255)));
 			objv.push_back(newPlane(1, Ray(Point3D(i, -10, j), Point3D(i, -11, j)), RGBcolor(255)));
@@ -361,7 +349,7 @@ void recalculate()
 
 	// set view window
 	view_window = Frame(view_ray, 1, 1, up);
-	light_sources.back().p = view_point;
+	// light_sources.back().p = view_point;
 
 	// project in_vector to view_window and add to view_lines_vector
 	for (int i = 0; i < lines.size(); i++)
@@ -442,6 +430,9 @@ void recalculate()
 void handle_input()
 {
 	const Uint8 *p = SDL_GetKeyboardState(NULL);
+	turning_speed = (std_turning_speed * ((float)STD_FPS)) / (max(frame_rate,1));
+	movement_speed = (std_movement_speed * ((float)STD_FPS)) / (max(frame_rate, 1));
+
 	if (p[SDL_SCANCODE_W])
 	{
 		view_point = view_point + (view_ray.p2 - view_ray.p1) * movement_speed;
@@ -570,66 +561,6 @@ int main(int argv, char** args){
 	init_world_rules();
 
 	set_objects(objs);
-	
-	// Old Objects for old method
-	get_old_objects();
-		
-	// project in_vector to view_window and add to view_lines_vector
-	for (int i = 0; i < lines.size(); i++){
-
-		Point3D lp1 = lines[i].first[0], lp2 = lines[i].first[1];
-		//case 1 : full line behind frame
-		if (cos(view_ray.unitize().p2.angle_between(lp1 - view_window.p1)) <= 0 && 
-			cos(view_ray.unitize().p2.angle_between(lp2 - view_window.p1)) <= 0){
-				lp1 = (view_window.p1*2) - view_window.p2;
-				lp2 = (view_window.p1*2) - view_window.p2;
-			}
-		//case 2 : first point behind frame
-		if (cos(view_ray.unitize().p2.angle_between(lp1 - view_window.p1)) < 0){
-			lp1 = find_intersection(view_window, Ray(lp1,lp2));
-		}
-		//case 3 : second
-		if (cos(view_ray.unitize().p2.angle_between(lp2 - view_window.p1)) < 0){
-			lp2 = find_intersection(view_window, Ray(lp1,lp2));
-		}
-		
-		intersected_points.push_back({find_intersection(view_window, Ray(view_point, lp1)),
-									find_intersection(view_window, Ray(view_point, lp2))}); 
-		
-		float x,y,l,theta,theta_y;
-		theta = (intersected_points[i][0] - view_window.p1).angle_between(view_window.p2 - view_window.p1); 
-		theta_y = (intersected_points[i][0] - view_window.p1).angle_between(view_window.p4 - view_window.p1); 
-		l = (intersected_points[i][0] - view_window.p1).len();
-		x = ((float)MAIN_VIEW_WIDTH) * (  (l * cos(theta))  /
-								((view_window.p2 - view_window.p1).len()));
-		y = ((float)MAIN_VIEW_HEIGHT) * ( (l * cos(theta_y))  /
-								((view_window.p4 - view_window.p1).len()));
-		
-		if (intersected_points[i][0].isequal(view_window.p1)){
-			x = 0;
-			y = 0;
-		}
-		Point p1 = Point(floor(x),floor(y));
-		
-		theta = (intersected_points[i][1] - view_window.p1).angle_between(view_window.p2 - view_window.p1); 
-		theta_y = (intersected_points[i][1] - view_window.p1).angle_between(view_window.p4 - view_window.p1); 
-		l = (intersected_points[i][1] - view_window.p1).len();
-		x = ((float)MAIN_VIEW_WIDTH) * (  (l * cos(theta))  /
-								((view_window.p2 - view_window.p1).len()));
-		
-		y = ((float)MAIN_VIEW_HEIGHT) * ( (l * cos(theta_y))  /
-								((view_window.p4 - view_window.p1).len()));
-		if (intersected_points[i][1].isequal(view_window.p1)){
-			x = 0;
-			y = 0;
-		}
-		
-		screen_lines.push_back({{p1,Point(floor(x),floor(y))},lines[i].second});
-		
-	}
-	
-	// clip partial lines in 2d and add to in vector
-	clipped_lines = clip(screen_lines, MAIN_VIEW_WIDTH,MAIN_VIEW_HEIGHT);
 
 	// calculating first frame before starting game loop
 	recalculate();
@@ -667,12 +598,6 @@ int main(int argv, char** args){
 
 		handle_input();
 
-		// draw view lines vector on screen.
-		for (int i = 0; i < clipped_lines.size(); i++){
-			mid_point_line_draw(sm, clipped_lines[i].first[0], clipped_lines[i].first[1], clipped_lines[i].second, 0);
-		}
-
-
 		//text
 		text_overlay();
 
@@ -689,9 +614,7 @@ int main(int argv, char** args){
 			old_time = new_time;
 			// cout << frame_rate << endl;
 		}
-		turning_speed = (std_turning_speed*((float)STD_FPS))/((float)frame_rate);
-		// movement_speed = (std_movement_speed*(float)STD_FPS)/((float)frame_rate);
-		movement_speed = turning_speed * (view_point.len());
+		
 	}
 	
 	SDL_DestroyRenderer(renderer);
