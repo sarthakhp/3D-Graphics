@@ -59,9 +59,22 @@ void temp_insert_3d_point_to_3d_object(vector<Point3D> &pts, Point3D p, vector<i
     }
     if (!pts.back().isequal(p))
     {
+        int index=0;
+        for (auto&op:pts){
+            if (op.isequal(p)){
+                for (auto&pts_p:poly){
+                    if (pts_p == index){
+                        return;
+                    }
+                }
+                poly.push_back(index);
+                return;
+            }
+            index++;
+        }
         pts.push_back(p);
-        poly.push_back(pts.size() - 1);
     }
+    poly.push_back(pts.size() - 1);
 }
 vector<string> split_string(string original_string, char delimiter)
 {
@@ -79,7 +92,7 @@ vector<string> split_string(string original_string, char delimiter)
 Object::Object(){
     points = vector<Point3D>(0);
     edges = vector<vector<int>>(0);
-    polygons = vector<vector<int>>(0);
+    polygons = vector<vector<int>>(0, vector<int>(0));
     normals = vector<Point3D>(0);
     colors = vector<RGBcolor>(0);
     center = Point3D();
@@ -143,10 +156,13 @@ Object2D Object::object_to_2d(Frame view_window, Point3D view_point, Ray normal)
     tempobj.colors = this->colors;
     tempobj.edges = this->edges;
     tempobj.polygons = this->polygons;
+    tempobj.points = vector<Point>(this->points.size());
+    tempobj.vertex_intensity = vector<float>(this->points.size(), 1);
 
-    for (auto&pi:this->polygons){
+    for (auto &pi : this->polygons)
+    {
         for (int i = 0; i < pi.size(); i++){
-            tempobj.points.push_back( find_intersection(view_window, Ray(view_point, this->points[pi[i]])).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT) );
+            tempobj.points[pi[i]] = ( find_intersection(view_window, Ray(view_point, this->points[pi[i]])).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT) );
         }
     }
 
@@ -213,7 +229,7 @@ vector<float> Object::gouraud_shading(float ambient_light, vector< LightSource> 
 
             // formula for fading of intensity accourding to distance of light source
             closeness = 1 / (1 + pow((light_to_poly.len() / 10), 2));
-            intensity += (ls.intensity * cos_theta * closeness);
+            intensity += (ls.intensity * cos_theta);
         }
 
         if (intensity > 1)
@@ -226,9 +242,54 @@ vector<float> Object::gouraud_shading(float ambient_light, vector< LightSource> 
     return ans;
 }
 Object Object::readObject(string path){
-    *this = Object();
 
+
+    // material file:
+    map<string, RGBcolor> mtl_colors;
     ifstream inFile;
+    // cout << split_string( path, '.')[0] + ".mtl" << endl;
+    inFile.open(split_string( path, '.')[0] + ".mtl");
+    if (!inFile)
+    {
+        printf("No mtl file !\n");
+        mtl_colors["no_file"] = RGBcolor(0, 0, 255);
+    }
+    else{
+        string line;
+        vector<vector<int>> vn;
+        vector<Point3D> vn_points;
+        float r,g,b;
+        string mtl_name;
+        while (getline(inFile, line))
+        {
+            std::stringstream ss{line};
+            string s;
+            ss >> s;
+            
+            if (s == "newmtl")
+            {
+                ss >> mtl_name;
+            }
+            else if (s == "Kd")
+            {
+                ss >> r;
+                ss >> g;
+                ss >> b;
+                mtl_colors[ mtl_name] = RGBcolor(r*255, g*255, b*255);
+                mtl_name = "";
+            }
+        }
+        int c=0;
+        for (auto&i:mtl_colors){
+            cout << i.second.r << endl;
+            c++;
+        }
+        cout << "total " << c << endl;
+    }
+    inFile.close();
+    
+
+    *this = Object();
     inFile.open(path);
     if (!inFile)
     {
@@ -240,6 +301,8 @@ Object Object::readObject(string path){
     vector<vector<int>> vn;
     vector<Point3D> vn_points;
     Point3D p;
+    string mtl_name = "no_file";
+
     while (getline(inFile, line))
     {
         std::stringstream ss{line};
@@ -263,6 +326,7 @@ Object Object::readObject(string path){
         else if (s == "f")
         {
             this->polygons.push_back({});
+            this->colors.push_back(mtl_colors[mtl_name]);
             vn.push_back({});
             string s;
             while (ss >> s)
@@ -271,6 +335,10 @@ Object Object::readObject(string path){
                 this->polygons.back().push_back(stoi(parts[0]) - 1);
                 vn.back().push_back(stoi(parts[2]) - 1);
             }
+        }
+        else if (s == "usemtl"){
+            mtl_name = "";
+            ss >> mtl_name;
         }
     }
 
@@ -282,7 +350,7 @@ Object Object::readObject(string path){
 
         this->normals.push_back( (dot_p >= 0) ? ni : Point3D() - ni );
         // this->colors.push_back(RGBcolor(rand() % 255, rand() % 255, rand() % 255));
-        this->colors.push_back(RGBcolor(0, 0, 255));
+        // this->colors.push_back(RGBcolor(0, 0, 255));
 
         index++;
     }
@@ -297,8 +365,204 @@ Object Object::readObject(string path){
         index++;
     }
 
+    // center
     this->center = Point3D();
+    for (auto&pts:this->points){
+        this->center = this->center + pts;
+    }
+    this->center = Point3D(this->center.x / this->points.size(), this->center.y / this->points.size(), this->center.z / this->points.size());
     return *this;
+}
+vector<Object> Object::readMultipleObject(string path){
+
+    // material file:
+    map<string, RGBcolor> mtl_colors;
+    ifstream inFile;
+    // cout << split_string( path, '.')[0] + ".mtl" << endl;
+    inFile.open(split_string(path, '.')[0] + ".mtl");
+    if (!inFile)
+    {
+        printf("No mtl file !\n");
+        mtl_colors["no_file"] = RGBcolor(0, 0, 255);
+    }
+    else
+    {
+        string line;
+        vector<vector<int>> vn;
+        vector<Point3D> vn_points;
+        float r, g, b;
+        string mtl_name;
+        while (getline(inFile, line))
+        {
+            std::stringstream ss{line};
+            string s;
+            ss >> s;
+
+            if (s == "newmtl")
+            {
+                ss >> mtl_name;
+            }
+            else if (s == "Kd")
+            {
+                ss >> r;
+                ss >> g;
+                ss >> b;
+                mtl_colors[mtl_name] = RGBcolor(r * 255, g * 255, b * 255);
+                mtl_name = "";
+            }
+        }
+        int c = 0;
+        for (auto &i : mtl_colors)
+        {
+            cout << i.second.r << endl;
+            c++;
+        }
+        cout << "total " << c << endl;
+    }
+    inFile.close();
+
+    *this = Object();
+    vector<Object> m_o(0);
+    inFile.open(path);
+    if (!inFile)
+    {
+        printf("Impossible to open the file !\n");
+        return m_o;
+    }
+
+    string line;
+    vector<vector<int>> vn(0);
+    vector<Point3D> vn_points(0);
+    Point3D p;
+    int total_pts = 0;
+    string mtl_name = "no_file";
+    bool first_object = true;
+    while (getline(inFile, line))
+    {
+        std::stringstream ss{line};
+        string s;
+        ss >> s;
+        if (s == "v")
+        {
+            ss >> p.x;
+            ss >> p.y;
+            ss >> p.z;
+            m_o.back().points.push_back(p);
+        }
+        else if (s == "vn")
+        {
+            ss >> p.x;
+            ss >> p.y;
+            ss >> p.z;
+
+            vn_points.push_back(p);
+        }
+        else if (s == "f")
+        {
+            m_o.back().polygons.push_back({});
+            m_o.back().colors.push_back(mtl_colors[mtl_name]);
+            vn.push_back({});
+            string s;
+            while (ss >> s)
+            {
+                vector<string> parts = split_string(s, '/');
+                m_o.back().polygons.back().push_back(stoi(parts[0]) - 1 - total_pts);
+                vn.back().push_back(stoi(parts[2]) - 1 - total_pts);
+            }
+        }
+        else if (s == "usemtl")
+        {
+            mtl_name = "";
+            ss >> mtl_name;
+        }
+        else if (s == "o"){
+            if (m_o.size()){
+                int index = 0;
+                for (auto &pi : m_o.back().polygons)
+                {
+                    Point3D ni = (m_o.back().points[pi[2]] - m_o.back().points[pi[0]]).cross_product(m_o.back().points[pi[1]] - m_o.back().points[pi[0]]);
+
+                    float dot_p = ni.dot_product(vn_points[vn[index][0]]);
+
+                    m_o.back().normals.push_back((dot_p >= 0) ? ni : Point3D() - ni);
+                    // m_o.back().colors.push_back(RGBcolor(rand() % 255, rand() % 255, rand() % 255));
+                    // m_o.back().colors.push_back(RGBcolor(0, 0, 255));
+
+                    index++;
+                }
+                if (m_o.back().normals.size() == 0){
+                    cout << "nouooooooooooooooooo : ";
+                    cout << m_o.size() << endl;
+                }
+
+                // vertex normals;
+                m_o.back().vertex_normals = vector<Point3D>(m_o.back().points.size(), Point3D());
+                index = 0;
+                for (auto &pi : m_o.back().polygons)
+                {
+                    for (auto &v : pi)
+                    {
+                        m_o.back().vertex_normals[v] = m_o.back().vertex_normals[v] + m_o.back().normals[index];
+                    }
+                    index++;
+                }
+
+                // center
+                m_o.back().center = Point3D();
+                for (auto &pts : m_o.back().points)
+                {
+                    m_o.back().center = m_o.back().center + pts;
+                }
+                m_o.back().center = Point3D(m_o.back().center.x / m_o.back().points.size(), m_o.back().center.y / m_o.back().points.size(), m_o.back().center.z / m_o.back().points.size());
+                total_pts += m_o.back().points.size();
+                vn = vector<vector<int>>(0,vector<int>(0));
+                vn_points = vector<Point3D>(0);
+
+            }
+            m_o.push_back(Object());
+        }
+    }
+    int index = 0;
+    for (auto &pi : m_o.back().polygons)
+    {
+        Point3D ni = (m_o.back().points[pi[2]] - m_o.back().points[pi[0]]).cross_product(m_o.back().points[pi[1]] - m_o.back().points[pi[0]]);
+
+        float dot_p = ni.dot_product(vn_points[vn[index][0]]);
+
+        m_o.back().normals.push_back((dot_p >= 0) ? ni : Point3D() - ni);
+        // m_o.back().colors.push_back(RGBcolor(rand() % 255, rand() % 255, rand() % 255));
+        // m_o.back().colors.push_back(RGBcolor(0, 0, 255));
+
+        index++;
+    }
+    if (m_o.back().normals.size() == 0)
+    {
+        cout << "nouooooooooooooooooo : ";
+        cout << m_o.size() << endl;
+    }
+
+    // vertex normals;
+    m_o.back().vertex_normals = vector<Point3D>(m_o.back().points.size(), Point3D());
+    index = 0;
+    for (auto &pi : m_o.back().polygons)
+    {
+        for (auto &v : pi)
+        {
+            m_o.back().vertex_normals[v] = m_o.back().vertex_normals[v] + m_o.back().normals[index];
+        }
+        index++;
+    }
+
+    // center
+    m_o.back().center = Point3D();
+    for (auto &pts : m_o.back().points)
+    {
+        m_o.back().center = m_o.back().center + pts;
+    }
+    m_o.back().center = Point3D(m_o.back().center.x / m_o.back().points.size(), m_o.back().center.y / m_o.back().points.size(), m_o.back().center.z / m_o.back().points.size());
+
+    return m_o;
+    
 }
 Object Object::move(Point3D move_by)
 {
@@ -307,6 +571,12 @@ Object Object::move(Point3D move_by)
     {
         p = p + move_by;
     }
+    return *this;
+}
+Object Object::move_to_origin()
+{
+    Point3D original_center = this->center;
+    this->move(Point3D() - this->center);
     return *this;
 }
 Object Object::rotate(float theta_yz, float phi_xz){
@@ -361,6 +631,31 @@ Object Object::rotate(float theta_yz, float phi_xz){
 
     this->move(original_center);
 
+    return *this;
+}
+Object Object::scale(float x, float y, float z){
+    Point3D original_center = this->center;
+    this->move(Point3D() - this->center);
+
+    for (auto &p : this->points)
+    {
+        p = Point3D(p.x * x, p.y * y, p.z * z);
+    }
+
+    this->move(original_center);
+    return *this;
+}
+Object Object::scale(float s)
+{
+    Point3D original_center = this->center;
+    this->move(Point3D() - this->center);
+
+    for (auto &p : this->points)
+    {
+        p = Point3D(p.x * s, p.y * s, p.z * s);
+    }
+
+    this->move(original_center);
     return *this;
 }
 

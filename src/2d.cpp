@@ -136,7 +136,6 @@ Object2D Object2D::clip_object(Point window){
 			intersection_between_two_lines(l, grid_line).first.print(1);
 			if (intersection_between_two_lines(l, grid_line).second){
 				Point intersected_point = intersection_between_two_lines(l, grid_line).first;
-				cout << "ahhh" << endl;
 				l[0].print(1);
 				l[1].print(1);
 				if (intersected_point.x <= (max(l[0].x, l[1].x)) 
@@ -258,7 +257,6 @@ Object2D Object2D::clip_object_2(const Point &window)
 
 	// calculate x_max, x_min, y_max, y_min
 	float x_max = INT_MIN, x_min = INT_MAX, y_max = INT_MIN, y_min = INT_MAX;
-
 	for (auto &pi : this->polygons)
 	{
 		// // optimization for polygon fully inside frame 
@@ -274,11 +272,8 @@ Object2D Object2D::clip_object_2(const Point &window)
 			// 	i += ans_obj.points.size();
 			// }
 			ans_obj.polygons.push_back(pi);
-			for (auto &pts : pi)
-			{
-				ans_obj.points.push_back(this->points[pts]);
-				ans_obj.vertex_intensity.push_back(this->vertex_intensity[pts]);
-			}
+			ans_obj.points = this->points;
+			ans_obj.vertex_intensity = (this->vertex_intensity);
 			continue;
 		}
 		// ---
@@ -413,7 +408,6 @@ Object2D Object2D::clip_object_2(const Point &window)
 			index++;			
 		}
 	}
-
 
 	return ans_obj;
 }
@@ -649,7 +643,7 @@ pair<Point,int> intersection_between_segments(vector<Point> v){
 		ans.y = l2p2.y;
 	}
 	
-	// cout << "---" << endl;
+	// cout << "=====" << endl;
 	// ans.print(1);
 	// l2p1.print(1);
 	// l2p2.print(1);

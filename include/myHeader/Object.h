@@ -56,8 +56,12 @@ public:
     vector<RGBcolor> illumination(float ambient_light, vector<LightSource> light_source);
     vector<float> gouraud_shading(float ambient_light, vector<LightSource> light_source);
     Object readObject(string path);
+    vector<Object> readMultipleObject(string path);
     Object move(Point3D move_by);
+    Object move_to_origin();
     Object rotate(float theta_yz, float phi_zx);
+    Object scale(float x, float y, float z);
+    Object scale(float s);
 
     // equation
     // circle

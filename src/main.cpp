@@ -31,7 +31,7 @@ vector<Point3D> all_points;
 Point3D view_point,watch_direction;
 
 // theta = zy plane angle, phi = zx plane angle from z
-float watch_theta = 0, watch_phi = PI, turning_speed = 0, std_turning_speed = 0.02;
+float watch_theta = -PI/2, watch_phi = 0, turning_speed = 0, std_turning_speed = 0.02;
 Ray view_ray,up;
 Frame view_window;
 vector<vector<Point3D>> intersected_points;
@@ -125,7 +125,7 @@ void text_overlay() {
 	text_slot.y += font_h;
 
 	//text 3
-	show_text("time : " + to_string(tempt), text_slot, font_h, f);
+	show_text("Angle_zy : " + to_string(round(watch_theta * (180 / PI))) + "Angle_zx : " + to_string(round(watch_phi * (180 / PI))), text_slot, font_h, f);
 	text_slot.y += font_h;
 
 	//text 4
@@ -159,7 +159,7 @@ void text_overlay() {
 void init_world_rules()
 {
 	// viewing position
-	view_point = Point3D(2, 1, 2);
+	view_point = Point3D(0, 4, 0);
 	view_ray = Ray(view_point, view_point + Point3D(watch_theta, watch_phi));
 	view_ray.unitize();
 	view_ray.p1 = view_ray.p1 + view_point;
@@ -170,9 +170,10 @@ void init_world_rules()
 	view_window = Frame(view_ray, 1, 1, up);
 
 	// light
-	light_sources = {LightSource(Point3D(2, 14, 2), 0.5),
-					};
-	ambient_light = 0.3;
+	light_sources = {
+		LightSource(Point3D(-1.3, 2.1, 0.93), 0.4),
+	};
+	ambient_light = 0.4;
 }
 
 void set_objects(vector<Object> &objv ) {
@@ -192,23 +193,38 @@ void set_objects(vector<Object> &objv ) {
 	// objv.push_back(Object().readObject("src\\Objects\\utah-teapot.obj"));
 	// objv.push_back(Object().readObject("src\\Objects\\fox.obj"));
 	// objv.push_back(Object().readObject("src\\Objects\\shoe.obj"));
-	Object teapot = Object().readObject("src\\Objects\\utah-teapot-low-poly.obj").rotate(-PI / 2, 0);
+	Object teapot = Object().readObject("src\\Objects\\utah-teapot-low-poly.obj").rotate(0, 0);
 	teapot.concave_object = true;
 	Object torus = Object().readObject("src\\Objects\\torus.obj").rotate(PI/3, 0);
 	torus.concave_object = true;
-	torus.move(Point3D(0,0,-4));
+	Object cone = Object().readObject("src\\Objects\\cone.obj").scale(10).rotate(0 ,0);
+	cone.move_to_origin();
+	Object sword = Object().readObject("src\\Objects\\sword.obj").scale(10);
+	Object timepass = Object().readObject("src\\Objects\\timepass.obj").rotate(0, 0);
+	// vector<Object> land = Object().readMultipleObject("src\\Objects\\timepass.obj");
+	// cout << "size -- " << land.size() << endl;
+	// torus.move(Point3D(0,0,-4));
 	// objv.push_back(cube);
 	// objv.push_back(sphere);
 	// objv.push_back(teapot);
-	objv.push_back(torus);
-	
-	// // light sources
-	// for (auto&ls:light_sources){
-	// 	objv.push_back(newCube(0.2, RGBcolor(255), ls.p));
-	// 	objv.back().self_luminious = true;
+	// objv.push_back(torus);
+	// objv.push_back(cone);
+	objv.push_back(timepass);
+	// objv.push_back(sword);
+	// for (auto&m_obj_i:land){
+	// 	objv.push_back(m_obj_i);
+	// 	if (m_obj_i.normals.size() == 0){
+	// 		cout << "hereeeeeeeeeeeeeeeeeee" << endl;
+	// 	}
 	// }
+	
+	// light sources
+	for (auto&ls:light_sources){
+		objv.push_back(newCube(0.2, RGBcolor(255), ls.p));
+		objv.back().self_luminious = true;
+	}
 
-	// // planes
+	// planes
 	// for (int i = -5; i < 5; i++){
 	// 	for (int j = -5; j < 5; j++){
 	// 		// , 0, rand() % 150 + 50
@@ -229,8 +245,6 @@ void set_objects(vector<Object> &objv ) {
 	// objv.push_back(newPlane(2, Ray(Point3D(0, 1, 0), Point3D(0,2,0)), RGBcolor(255)));
 
 }
-
-
 
 void process_projection(Object obj, int index){
 	
@@ -309,19 +323,13 @@ void process_projection_using_normal(vector<Object> obj_vector, vector<vector<fl
 		// obj_2d[index].colors = o.illumination(ambient_light, light_sources);
 		obj_2d[index].vertex_intensity = o.gouraud_shading(ambient_light, light_sources);
 		obj_3d_clipped.push_back(o);
-		// for (int i = 0; i < obj_2d[index].vertex_intensity.size(); i++)
-		// {
-		// 	cout << obj_2d[index].vertex_intensity[i] << " ";
-		// }
-		// cout << endl;
 		index++;
-	}
+	}	
 
 	// clipping the 2d objects
 	for (auto&obj_2d_i:obj_2d){
 		
 		obj_2d_i = obj_2d_i.clip_object_2(Point(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
-		
 	}
 
 	vector<vector<float>> polygon_distance;
@@ -397,6 +405,9 @@ void recalculate()
 	}
 	else if (movement_mode == 1){
 		view_ray = Ray(view_point, Point3D(0,0,0));
+		view_ray.set_angle_from_current_coords();
+		watch_theta = view_ray.angle_yz;
+		watch_phi = view_ray.angle_xz;
 		view_ray.unitize();
 		up = Ray(view_point, view_point + Point3D( view_ray.p2.theta() + PI/2, view_ray.p2.phi() ) );
 		view_ray.p1 = view_ray.p1 + view_point;
