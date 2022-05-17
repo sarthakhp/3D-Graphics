@@ -29,12 +29,23 @@ struct Point {
 		ans.y = y + p.y;
 		return ans;
 	}
-	bool isequal(Point p){
+    Point operator-(Point const &p)
+    {
+        Point ans;
+        ans.x = x - p.x;
+        ans.y = y - p.y;
+        return ans;
+    }
+    bool isequal(Point p){
 		if (p.x == x && p.y == y){
 			return true;
 		}
 		return false;
 	}
+    float len()
+    {
+        return sqrt(pow(this->x, 2) + pow(this->y, 2));
+    }
     void print();
     void print(int endl);
 };
@@ -115,6 +126,7 @@ public:
 
     // colors
     vector<RGBcolor> colors;
+    vector<float> vertex_intensity;
 
     Point center;
 
@@ -138,15 +150,6 @@ vector<Point> mid_point_line_draw_c(Point start, Point end, const RGBcolor &line
 
 vector<vector<Point>> row_fill(vector<Point> polygon_points, RGBcolor fill_color, Screen_memory &temp_sm);
 
-void row_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color, Screen_memory &temp_sm);
-
-
-
-
-
-
-
-
-
+void row_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color, Screen_memory &temp_sm, vector<float> intensities);
 
 // end

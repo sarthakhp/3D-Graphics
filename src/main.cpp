@@ -51,7 +51,7 @@ vector<Object> objs;
 Object2D tempobj;
 vector<Object2D> obj_2d;
 vector<vector<float>> distance_memory(MAIN_VIEW_HEIGHT, vector<float>(MAIN_VIEW_WIDTH, 0)), init_dm(MAIN_VIEW_HEIGHT, vector<float>(MAIN_VIEW_WIDTH, 0));
-vector<Point> points_tmp;
+
 vector<vector<Point>> fill_points;
 long long int tempt;
 
@@ -159,21 +159,19 @@ void text_overlay() {
 void init_world_rules()
 {
 	// viewing position
-	view_point = Point3D(0, 0, 5);
+	view_point = Point3D(2, 1, 2);
 	view_ray = Ray(view_point, view_point + Point3D(watch_theta, watch_phi));
 	view_ray.unitize();
 	view_ray.p1 = view_ray.p1 + view_point;
 	view_ray.p2 = view_ray.p2 + view_point;
-	Point3D(watch_theta, watch_phi).print(1);
 	up = Ray(view_ray.p1, view_ray.p1 + Point3D(watch_theta + ((PI) / ((float)2)), watch_phi));
 
 	// set view window
 	view_window = Frame(view_ray, 1, 1, up);
 
 	// light
-	light_sources = {LightSource(Point3D(8, 5, 8), 0.8),
-					 LightSource(Point3D(8, 5, -8), 0.5),
-					 LightSource(Point3D(0, 90, 100), 10)};
+	light_sources = {LightSource(Point3D(2, 14, 2), 0.5),
+					};
 	ambient_light = 0.3;
 }
 
@@ -188,29 +186,51 @@ void set_objects(vector<Object> &objv ) {
 	// objv.push_back(newCube(2, Point3D(-6, 0, -6)));
 
 	// reading obj files
-	objv.push_back(Object().readObject("src\\Objects\\cube.obj").rotate(0,PI/4));
+	Object cube = Object().readObject("src\\Objects\\cube.obj").rotate(0,0);
 	// objv.push_back(Object().readObject("src\\Objects\\low-poly-sphere.obj").move(Point3D(10,100,10)));
-	// objv.push_back(Object().readObject("src\\Objects\\sphere.obj"));
-	// objv.push_back(Object().readObject("src\\utah-teapot.obj"));
+	Object sphere = Object().readObject("src\\Objects\\sphere.obj");
+	// objv.push_back(Object().readObject("src\\Objects\\utah-teapot.obj"));
 	// objv.push_back(Object().readObject("src\\Objects\\fox.obj"));
 	// objv.push_back(Object().readObject("src\\Objects\\shoe.obj"));
+	Object teapot = Object().readObject("src\\Objects\\utah-teapot-low-poly.obj").rotate(-PI / 2, 0);
+	teapot.concave_object = true;
+	Object torus = Object().readObject("src\\Objects\\torus.obj").rotate(PI/3, 0);
+	torus.concave_object = true;
+	torus.move(Point3D(0,0,-4));
+	// objv.push_back(cube);
+	// objv.push_back(sphere);
+	// objv.push_back(teapot);
+	objv.push_back(torus);
+	
+	// // light sources
+	// for (auto&ls:light_sources){
+	// 	objv.push_back(newCube(0.2, RGBcolor(255), ls.p));
+	// 	objv.back().self_luminious = true;
+	// }
 
-	// light sources
-	for (auto&ls:light_sources){
-		objv.push_back(newCube(0.2, RGBcolor(255), ls.p));
-		objv.back().self_luminious = true;
-	}
+	// // planes
+	// for (int i = -5; i < 5; i++){
+	// 	for (int j = -5; j < 5; j++){
+	// 		// , 0, rand() % 150 + 50
+	// 		objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, 0, j)), RGBcolor(255)));
+	// 		objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, -11, j)), RGBcolor(255)));
+	// 	}
+	// }
+	// for (float i = -5; i < 5; i++)
+	// {
+	// 	float z = -5.5;
+	// 	for (float j = -1.5; j < 5; j++)
+	// 	{
+	// 		objv.push_back(newPlane(1, Ray(Point3D(i, j, z), Point3D(i, j+1, z)), RGBcolor(255)).rotate(PI/2,0));
+	// 		objv.push_back(newPlane(1, Ray(Point3D(i, j, z), Point3D(i, j-1, z)), RGBcolor(255)).rotate(PI / 2, 0));
+	// 	}
+	// }
 
-	// planes
-	for (int i = -5; i < 5; i++){
-		for (int j = -5; j < 5; j++){
-			// , 0, rand() % 150 + 50
-			objv.push_back(newPlane(1, Ray(Point3D(i, -10, j), Point3D(i, 0, j)), RGBcolor(255)));
-			objv.push_back(newPlane(1, Ray(Point3D(i, -10, j), Point3D(i, -11, j)), RGBcolor(255)));
-		}
-	}
+	// objv.push_back(newPlane(2, Ray(Point3D(0, 1, 0), Point3D(0,2,0)), RGBcolor(255)));
 
 }
+
+
 
 void process_projection(Object obj, int index){
 	
@@ -232,6 +252,7 @@ void process_projection(Object obj, int index){
 		obj_2d.push_back(tempobj);
 	}
 	
+	vector<Point> points_tmp;
 	// comparing distance and writing to sm (screen memory)
 	for (int obji = 0; obji < obj_2d.size(); obji++)
 	{
@@ -272,56 +293,91 @@ void process_projection(Object obj, int index){
 			temp_sm = init_sm;
 		}
 	}
+
 }
 
 void process_projection_using_normal(vector<Object> obj_vector, vector<vector<float>> sorted_obj_index)
 {
-
 	// 2d object 'obj' to 2d object 'tempobj'
 	int index=0;
 	obj_2d = vector<Object2D>(objs.size());
+	vector<Object> obj_3d_clipped; 
 	for (auto &i_obj : sorted_obj_index)
 	{
-		obj_2d[index] = obj_vector[ (float) i_obj[1]].object_to_2d(view_window, view_point, view_ray);
-		obj_2d[index].colors = obj_vector[ (float) i_obj[1]].illumination(ambient_light, light_sources);
-
+		Object o = obj_vector[i_obj[1]].clip_3d_object(view_window, view_point, view_ray);
+		obj_2d[index] = o.object_to_2d(view_window, view_point, view_ray);
+		// obj_2d[index].colors = o.illumination(ambient_light, light_sources);
+		obj_2d[index].vertex_intensity = o.gouraud_shading(ambient_light, light_sources);
+		obj_3d_clipped.push_back(o);
+		// for (int i = 0; i < obj_2d[index].vertex_intensity.size(); i++)
+		// {
+		// 	cout << obj_2d[index].vertex_intensity[i] << " ";
+		// }
+		// cout << endl;
 		index++;
 	}
 
-
 	// clipping the 2d objects
 	for (auto&obj_2d_i:obj_2d){
+		
 		obj_2d_i = obj_2d_i.clip_object_2(Point(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
+		
 	}
 
-
+	vector<vector<float>> polygon_distance;
+	vector<Point> points_tmp;
+	vector<float> intensities;
 	// writing to sm by filling 2d polygons (screen memory)
 	for (int obji = 0; obji < obj_2d.size(); obji++)
 	{
 		int obj_3d_i = sorted_obj_index[obji][1];
-		// for each 2d object:
+
+		// for each 2d object
+		polygon_distance = vector<vector<float>>(0);
+
 		for (int pi = 0; pi < obj_2d[obji].polygons.size(); pi++)
 		{
 			// for each polygon in the 2d object:
-
-			// if polygon not facing us, skip
-			if (objs[obj_3d_i].normals[pi].dot_product(view_point - objs[obj_3d_i].points[objs[obj_3d_i].polygons[pi][0]]) < 0)
+			if (obj_3d_clipped[obji].polygons[pi].size() == 0)
 			{
 				continue;
 			}
 
+			Point3D polygon_to_viewpoint = view_point - obj_3d_clipped[obji].points[obj_3d_clipped[obji].polygons[pi][0]];
+			// if polygon not facing us, skip
+			if (obj_3d_clipped[obji].normals[pi].dot_product(polygon_to_viewpoint) < 0)
+			{
+				continue;
+			}
+
+			// calculate distance between polygon to viewpoint
+			polygon_distance.push_back({(polygon_to_viewpoint).len(), (float) pi});
+		}
+
+		if (objs[obj_3d_i].concave_object){
+			sort(polygon_distance.begin(), polygon_distance.end());
+			reverse(polygon_distance.begin(), polygon_distance.end());
+		}
+
+		int pi;
+		for (int spi = 0; spi < polygon_distance.size(); spi++)
+		{
+			// for each SORTED polygon in the 2d object
+			pi = polygon_distance[spi][1];
+
 			fill_points = vector<vector<Point>>(0);
 			// lists of points for filling the 2d polygon (can't pass direct polygon as it has point index instead of actual points)
 			points_tmp = vector<Point>(0);
+			intensities = vector<float>(0);
 
 			for (int si = 0; si < obj_2d[obji].polygons[pi].size(); si++)
 			{
 				// inserting each point into the vector for the fill_polygon
 				points_tmp.push_back(obj_2d[obji].points[obj_2d[obji].polygons[pi][si]]);
+				intensities.push_back(obj_2d[obji].vertex_intensity[obj_2d[obji].polygons[pi][si]]);
 			}
-			
-			row_fill_direct_to_screen(points_tmp, obj_2d[obji].colors[pi], sm);
-			
+
+			row_fill_direct_to_screen(points_tmp, obj_2d[obji].colors[pi], sm, intensities);
 		}
 	}
 
@@ -350,68 +406,6 @@ void recalculate()
 	// set view window
 	view_window = Frame(view_ray, 1, 1, up);
 	// light_sources.back().p = view_point;
-
-	// project in_vector to view_window and add to view_lines_vector
-	for (int i = 0; i < lines.size(); i++)
-	{
-
-		Point3D lp1 = lines[i].first[0], lp2 = lines[i].first[1];
-		// case 1 : full line behind frame
-		if (cos(view_ray.unitize().p2.angle_between(lp1 - view_window.p1)) <= 0 &&
-			cos(view_ray.unitize().p2.angle_between(lp2 - view_window.p1)) <= 0)
-		{
-			lp1 = (view_window.p1 * 2) - view_window.p2;
-			lp2 = (view_window.p1 * 2) - view_window.p2;
-		}
-		// case 2 : first point behind frame
-		if (cos(view_ray.unitize().p2.angle_between(lp1 - view_window.p1)) < 0)
-		{
-			lp1 = find_intersection(view_window, Ray(lp1, lp2));
-		}
-		// case 3 : second
-		if (cos(view_ray.unitize().p2.angle_between(lp2 - view_window.p1)) < 0)
-		{
-			lp2 = find_intersection(view_window, Ray(lp1, lp2));
-		}
-
-		intersected_points[i] = {find_intersection(view_window, Ray(view_point, lp1)),
-								 find_intersection(view_window, Ray(view_point, lp2))};
-
-		float x, y, l, theta, theta_y;
-		theta = (intersected_points[i][0] - view_window.p1).angle_between(view_window.p2 - view_window.p1);
-		theta_y = (intersected_points[i][0] - view_window.p1).angle_between(view_window.p4 - view_window.p1);
-		l = (intersected_points[i][0] - view_window.p1).len();
-		x = ((float)MAIN_VIEW_WIDTH) * ((l * cos(theta)) /
-										((view_window.p2 - view_window.p1).len()));
-		y = ((float)MAIN_VIEW_HEIGHT) * ((l * cos(theta_y)) /
-										 ((view_window.p4 - view_window.p1).len()));
-
-		if (intersected_points[i][0].isequal(view_window.p1))
-		{
-			x = 0;
-			y = 0;
-		}
-		Point p1 = Point(floor(x), floor(y));
-
-		theta = (intersected_points[i][1] - view_window.p1).angle_between(view_window.p2 - view_window.p1);
-		theta_y = (intersected_points[i][1] - view_window.p1).angle_between(view_window.p4 - view_window.p1);
-		l = (intersected_points[i][1] - view_window.p1).len();
-		x = ((float)MAIN_VIEW_WIDTH) * ((l * cos(theta)) /
-										((view_window.p2 - view_window.p1).len()));
-
-		y = ((float)MAIN_VIEW_HEIGHT) * ((l * cos(theta_y)) /
-										 ((view_window.p4 - view_window.p1).len()));
-		if (intersected_points[i][1].isequal(view_window.p1))
-		{
-			x = 0;
-			y = 0;
-		}
-
-		screen_lines[i] = {{p1, Point(floor(x), floor(y))}, lines[i].second};
-	}
-	// clip partial lines in 2d and add to in vector
-	clipped_lines = clip(screen_lines, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
-	// clipped_lines = screen_lines;
 
 	// sort objects
 	vector<vector<float>> object_order;

@@ -38,6 +38,7 @@ public:
 
     // normals
     vector<Point3D> normals;
+    vector<Point3D> vertex_normals;
 
     // colors
     vector<RGBcolor> colors;
@@ -46,11 +47,14 @@ public:
 
     // luminous
     bool self_luminious;
+    bool concave_object;
 
     // methods
     Object();
+    Object clip_3d_object(Frame view_window, Point3D view_point, Ray normal);
     Object2D object_to_2d(Frame view_window, Point3D view_point, Ray normal);
     vector<RGBcolor> illumination(float ambient_light, vector<LightSource> light_source);
+    vector<float> gouraud_shading(float ambient_light, vector<LightSource> light_source);
     Object readObject(string path);
     Object move(Point3D move_by);
     Object rotate(float theta_yz, float phi_zx);

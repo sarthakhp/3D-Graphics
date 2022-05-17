@@ -50,3 +50,52 @@ for (int i = 0; i < obj.points.size(); i++)
 	cout <<endl << "press any key...";
 	// cin >> somen;
 	// return 0;
+
+
+// ------------------------------
+
+Object2D Object::object_to_2d(Frame view_window, Point3D view_point, Ray normal){
+
+    normal.p1 = Point3D();
+    normal.p2 = (view_window.p2 - view_window.p1).cross_product(view_window.p4 - view_window.p1);
+
+    // 3d object 'obj' to 2d object 'tempobj'
+    Object tempobj = *this;
+    tempobj.points = vector<Point3D>(0);
+    tempobj.polygons = vector<vector<int>>(0);
+
+    for (auto&pi:this->polygons){
+        tempobj.polygons.push_back({});
+        for (int i = 0; i < pi.size(); i++){
+            Point3D s = this->points[pi[i]], e = this->points[pi[(i+1)%pi.size()]];
+            float angle_s = (s - view_window.p1).dot_product(normal.p2 - normal.p1), angle_e = (e - view_window.p1).dot_product(normal.p2 - normal.p1);
+            Point3D inters = find_intersection(view_window, Ray(s, e));
+            // float mp_vi =  + ((vi_e - vi_s) * ((inters - s).len() / (e - s).len()));
+            // if both start and end are positive
+            if (angle_s >= 0 && angle_e >= 0)
+            {
+                temp_insert_3d_point(tempobj.points, tempobj.vertex_intensity,  find_intersection(view_window, Ray(view_point, s)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+                temp_insert_3d_point(tempobj.points, tempobj.vertex_intensity, find_intersection(view_window, Ray(view_point, e)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+            }
+            else if (angle_s < 0 && angle_e >= 0){
+                temp_insert_3d_point(tempobj.points, tempobj.vertex_intensity, inters.to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+                temp_insert_3d_point(tempobj.points, tempobj.vertex_intensity, find_intersection(view_window, Ray(view_point, e)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+            }else if (angle_s >= 0 && angle_e < 0 ){
+                temp_insert_3d_point(tempobj.points, tempobj.vertex_intensity, find_intersection(view_window, Ray(view_point, s)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+                temp_insert_3d_point(tempobj.points, tempobj.vertex_intensity, inters.to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT), tempobj.polygons.back());
+            }
+        }
+    }
+
+
+    return tempobj;
+}
+
+
+// ---------------------------
+
+
+		cout << o.points.size() << endl;
+		cout << o.vertex_normals.size() << endl;
+		cout << "poly : " << o.polygons.size() << endl;
+		cout << "colors : " << o.colors.size() << endl;

@@ -89,14 +89,17 @@ pair<Point, bool> intersection_between_two_lines(vector<Point> line1, vector<Poi
 	}
 }
 
-void temp_insert_point(vector<Point> &pts, Point p, vector<int> &poly){
+void temp_insert_point(vector<Point> &pts, vector<float> &vt_vector, Point p, float vt, vector<int> &poly){
+
 	if (pts.size() == 0){
 		pts.push_back(p);
+		vt_vector.push_back(vt);
 		poly.push_back(pts.size() - 1);
 		return;
 	}
 	if (!pts.back().isequal(p)){
 		pts.push_back(p);
+		vt_vector.push_back(vt);
 		poly.push_back(pts.size()-1);
 	}
 }
@@ -249,6 +252,7 @@ Object2D Object2D::clip_object_2(const Point &window)
 {
 	Object2D ans_obj;
 	vector<int> p1,  p2, p3, p4;
+	vector<float> In1, In2, In3, In4;
 	vector<Point> points1, points2, points3, points4;
 	ans_obj.colors = this->colors;
 
@@ -273,6 +277,7 @@ Object2D Object2D::clip_object_2(const Point &window)
 			for (auto &pts : pi)
 			{
 				ans_obj.points.push_back(this->points[pts]);
+				ans_obj.vertex_intensity.push_back(this->vertex_intensity[pts]);
 			}
 			continue;
 		}
@@ -280,79 +285,88 @@ Object2D Object2D::clip_object_2(const Point &window)
 
 		p1 = {};
 		points1 = {};
+		In1 = {};
 		// for line x = 0
 		for (int i = 0; i < pi.size(); i++){
 			Point s = this->points[pi[i]], e = this->points[pi[(i + 1)%pi.size()]];
+			float vi_s = this->vertex_intensity[pi[i]], vi_e = this->vertex_intensity[pi[(i + 1) % pi.size()]];
 			pair<Point, bool> inters = intersection_between_two_lines({s,e},{Point(0,0),Point(0,window.y)});
 			
 			if (min(s.x, e.x) >= 0){
-				temp_insert_point(points1, s, p1);
-				temp_insert_point(points1, e, p1);
+				temp_insert_point(points1, In1, s, vi_s, p1);
+				temp_insert_point(points1, In1, e, vi_e, p1);
 			}
 			else if (inters.second && max(s.x,e.x) >= 0 && min(s.x,e.x) <= 0){
+				float mp_vi = vi_s + ((vi_e - vi_s) * ((inters.first - s).len() / (e - s).len()));
 				if (s.x > 0){
-					temp_insert_point(points1, s, p1);
-					temp_insert_point(points1, inters.first, p1);
+					temp_insert_point(points1, In1, s, vi_s, p1);
+					temp_insert_point(points1, In1, inters.first, mp_vi,  p1);
 				}
 				else{
-					temp_insert_point(points1, inters.first, p1);
-					temp_insert_point(points1, e, p1);
+					temp_insert_point(points1, In1, inters.first, mp_vi, p1);
+					temp_insert_point(points1, In1, e, vi_e, p1);
 				}
 			}
 		}
 
 		p2 = {};
 		points2 = {};
+		In2 = {};
 		// for line x = max
 		for (int i = 0; i < p1.size(); i++)
 		{
 			Point s = points1[p1[i]], e = points1[p1[(i + 1) % p1.size()]];
+			float vi_s = In1[p1[i]], vi_e = In1[p1[(i + 1) % p1.size()]];
 			pair<Point, bool> inters = intersection_between_two_lines({s, e}, {Point(window.x, 0), Point(window.x, window.y)});
 			
 			if (max(s.x, e.x) <= window.x)
 			{
-				temp_insert_point(points2, s, p2);
-				temp_insert_point(points2, e, p2);
+				temp_insert_point(points2, In2, s, vi_s, p2);
+				temp_insert_point(points2, In2, e, vi_e, p2);
 			}
 			else if (inters.second && max(s.x, e.x) >= window.x && min(s.x, e.x) <= window.x)
 			{
+				float mp_vi = vi_s + ((vi_e - vi_s) * ((inters.first - s).len() / (e - s).len()));
 				if (s.x < window.x)
 				{
-					temp_insert_point(points2, s, p2);
-					temp_insert_point(points2, inters.first, p2);
+					temp_insert_point(points2, In2, s, vi_s, p2);
+					temp_insert_point(points2, In2, inters.first, mp_vi, p2);
 				}
 				else
 				{
-					temp_insert_point(points2, inters.first, p2);
-					temp_insert_point(points2, e, p2);
+					temp_insert_point(points2, In2, inters.first, mp_vi, p2);
+					temp_insert_point(points2, In2, e, vi_e, p2);
 				}
 			}
 		}
 
 		p3 = {};
 		points3 = {};
+		In3 = {};
 		// for line y = 0
 		for (int i = 0; i < p2.size(); i++)
 		{
 			Point s = points2[p2[i]], e = points2[p2[(i + 1) % p2.size()]];
+			float vi_s = In2[p2[i]], vi_e = In2[p2[(i + 1) % p2.size()]];
 			pair<Point, bool> inters = intersection_between_two_lines({s, e}, {Point(0, 0), Point(window.x, 0)});
 
 			if (min(s.y, e.y) >= 0)
 			{
-				temp_insert_point(points3, s, p3);
-				temp_insert_point(points3, e, p3);
+				temp_insert_point(points3, In3, s, vi_s, p3);
+				temp_insert_point(points3, In3, e, vi_e, p3);
 			}
 			else if (inters.second && max(s.y, e.y) >= 0 && min(s.y, e.y) <= 0)
 			{
+				float mp_vi = vi_s + ((vi_e - vi_s) * ((inters.first - s).len() / (e - s).len()));
 				if (s.y > 0)
 				{
-					temp_insert_point(points3, s, p3);
-					temp_insert_point(points3, inters.first, p3);
+					temp_insert_point(points3, In3, s, vi_s, p3);
+					temp_insert_point(points3, In3, inters.first, mp_vi, p3);
 				}
 				else
 				{
-					temp_insert_point(points3, inters.first, p3);
-					temp_insert_point(points3, e, p3);
+					temp_insert_point(points3, In3, inters.first, mp_vi, p3);
+					temp_insert_point(points3, In3, e, vi_e, p3);
 				}
 			}
 		}
@@ -360,27 +374,30 @@ Object2D Object2D::clip_object_2(const Point &window)
 
 		p4 = {};
 		points4 = {};
+		In4 = {};
 		// for line y = max
 		for (int i = 0; i < p3.size(); i++)
 		{
 			Point s = points3[p3[i]], e = points3[p3[(i + 1) % p3.size()]];
+			float vi_s = In3[p3[i]], vi_e = In3[p3[(i + 1) % p3.size()]];
 			pair<Point, bool> inters = intersection_between_two_lines({s, e}, {Point(0, window.y), Point(window.x, window.y)});
 			if (max(s.y, e.y) <= window.y)
 			{
-				temp_insert_point(points4, s, p4);
-				temp_insert_point(points4, e, p4);
+				temp_insert_point(points4, In4, s, vi_s, p4);
+				temp_insert_point(points4, In4, e, vi_e, p4);
 			}
 			else if (inters.second && max(s.y, e.y) >= window.y && min(s.y, e.y) <= window.y)
 			{
+				float mp_vi = vi_s + ((vi_e - vi_s) * ((inters.first - s).len() / (e - s).len()));
 				if (s.y < window.y)
 				{
-					temp_insert_point(points4, s, p4);
-					temp_insert_point(points4, inters.first, p4);
+					temp_insert_point(points4, In4, s, vi_s, p4);
+					temp_insert_point(points4, In4, inters.first, mp_vi, p4);
 				}
 				else
 				{
-					temp_insert_point(points4, inters.first, p4);
-					temp_insert_point(points4, e, p4);
+					temp_insert_point(points4, In4, inters.first, mp_vi, p4);
+					temp_insert_point(points4, In4, e, vi_e, p4);
 				}
 			}
 		}
@@ -389,8 +406,11 @@ Object2D Object2D::clip_object_2(const Point &window)
 			i += ans_obj.points.size();
 		}
 		ans_obj.polygons.push_back(p4);
+		int index = 0;
 		for (auto&i:points4){
 			ans_obj.points.push_back(i);
+			ans_obj.vertex_intensity.push_back(In4[index]);
+			index++;			
 		}
 	}
 
@@ -469,6 +489,111 @@ void mid_point_line_draw(Screen_memory &temp_sm, Point &start, Point &end, const
 			}
 			temp_sm[current.y][current.x] = line_color;
 			if (floor(current.y) == floor(end.y)) {
+				break;
+			}
+		}
+	}
+}
+RGBcolor assign_color_with_intensity(RGBcolor c_t, float intensity){
+	if (intensity > 1)
+		intensity = 1;
+	if (intensity < 0)
+		intensity = 0;
+	return (RGBcolor((c_t.r * intensity),
+					 (c_t.g * intensity),
+					 (c_t.b * intensity)));
+}
+void mid_point_line_draw_intensity(Screen_memory &temp_sm, Point &start, Point &end, const RGBcolor &line_color, int erase_mode, float i_s, float i_e)
+{
+
+	Point current = start;
+
+	if ((current.y >= temp_sm.size() || current.x >= temp_sm[0].size() || current.y < 0 || current.x < 0))
+	{
+		start = end;
+		end = current;
+		current = end;
+		float tmp_intensity = i_s;
+		i_s = i_e;
+		i_e = tmp_intensity;
+
+		if ((current.y >= temp_sm.size() || current.x >= temp_sm[0].size() || current.y < 0 || current.x < 0))
+		{
+			// finding intersection
+			return;
+		}
+	}
+
+	temp_sm[current.y][current.x] = assign_color_with_intensity(line_color, i_s);
+
+	if (floor(start.x) == floor(end.x) && floor(start.y) == floor(end.y))
+	{
+		return;
+	}
+	float dx = end.x - start.x;
+	float dy = end.y - start.y;
+	if (dx == 0 && dy == 0)
+		return;
+	float d = dy - (dx / 2.f);
+	float x_step, y_step, i_xstep, i_ystep, curr_intensity;
+	x_step = (signbit(dx) == 0) ? 1 : -1;
+	y_step = (signbit(dy) == 0) ? 1 : -1;
+	i_xstep = (i_e - i_s) / (abs(dx));
+	i_ystep = (i_e - i_s) / (abs(dy));
+	curr_intensity = i_s;
+	if (abs(dy) <= abs(dx))
+	{
+		d = (dy * (x_step)) - ((dx / 2.f) * (y_step));
+		while (true)
+		{
+			current.x += x_step;
+			curr_intensity += i_xstep;
+			if ((d * (y_step) * (x_step)) < 0)
+			{
+				d += dy * (x_step);
+			}
+			else
+			{
+				d += dy * (x_step)-dx * (y_step);
+				current.y += y_step;
+			}
+
+			if (current.y >= temp_sm.size() || current.x >= temp_sm[0].size() || current.y < 0 || current.x < 0)
+			{
+				break;
+			}
+			temp_sm[current.y][current.x] = assign_color_with_intensity(line_color, curr_intensity);
+
+			if (floor(current.x) == floor(end.x))
+			{
+				break;
+			}
+		}
+	}
+	else
+	{
+		d = (dy / 2.f) * (x_step)-dx * (y_step);
+		while (true)
+		{
+			current.y += y_step;
+			curr_intensity += i_ystep;
+			if (d * (y_step) * (x_step) > 0)
+			{
+				d -= dx * (y_step);
+			}
+			else
+			{
+				d += dy * (x_step)-dx * (y_step);
+				current.x += x_step;
+			}
+
+			if (current.y >= temp_sm.size() || current.x >= temp_sm[0].size() || current.y < 0 || current.x < 0)
+			{
+				break;
+			}
+			temp_sm[current.y][current.x] = assign_color_with_intensity(line_color, curr_intensity);
+			if (floor(current.y) == floor(end.y))
+			{
 				break;
 			}
 		}
@@ -884,7 +1009,7 @@ vector<vector<Point>> row_fill(vector<Point> polygon_points, RGBcolor fill_color
 	return ans;
 }
 
-void row_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color, Screen_memory &temp_sm)
+void row_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color, Screen_memory &temp_sm, vector<float> vti)
 {
 	vector<vector<Point>> ans;
 	int min_x = INT_MAX, max_x = INT_MIN, min_y = INT_MAX, max_y = INT_MIN;
@@ -903,13 +1028,19 @@ void row_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color
 	}
 
 	Point start_p, end_p, next_p;
+	float s_i, e_i, step_i, curr_intensity;
 	vector<int> yv(max_y - min_y + 1, 0);
-	vector<float> empty_v(0);
-	vector<vector<float>> all_points(max_y - min_y + 1, empty_v);
+	vector<pair<float, float>> empty_v(0);
+	vector<vector<pair<float, float>>> all_points(max_y - min_y + 1, empty_v);
+	
 	for (int i = 0; i < polygon_points.size(); i++)
 	{
 		start_p = polygon_points[(i - 1 + polygon_points.size()) % polygon_points.size()];
 		end_p = polygon_points[i];
+		s_i = vti[(i - 1 + polygon_points.size()) % polygon_points.size()];
+		e_i = vti[i];
+		curr_intensity = s_i;
+		step_i = (e_i - s_i)/(abs(end_p.y - start_p.y));
 		int j = start_p.y;
 		float x;
 		while (j != end_p.y)
@@ -922,16 +1053,17 @@ void row_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color
 			{
 				j++;
 			}
+			curr_intensity += step_i;
 			if (j == end_p.y)
 				break;
 			x = ((((float)j - start_p.y) * (end_p.x - start_p.x)) / (end_p.y - start_p.y)) + start_p.x;
-			all_points[j - min_y].push_back(x);
+			all_points[j - min_y].push_back({x, curr_intensity});
 		}
 
 		next_p = polygon_points[(i + 1) % polygon_points.size()];
 		if (signbit(end_p.y - next_p.y) != signbit(end_p.y - start_p.y))
 		{
-			all_points[end_p.y - min_y].push_back(end_p.x);
+			all_points[end_p.y - min_y].push_back({end_p.x, e_i});
 		}
 	}
 	for (int i = 0; i < all_points.size(); i++)
@@ -942,9 +1074,9 @@ void row_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color
 		{
 			if (j % 2 == 0)
 			{
-				Point start = Point(ceil(all_points[i][j]), i + min_y), end = Point(floor(all_points[i][j + 1]), i + min_y);
+				Point start = Point(ceil(all_points[i][j].first), i + min_y), end = Point(floor(all_points[i][j + 1].first), i + min_y);
 
-				mid_point_line_draw(temp_sm, start, end, fill_color, 0);
+				mid_point_line_draw_intensity(temp_sm, start, end, fill_color, 0, all_points[i][j].second, all_points[i][j + 1].second);
 			}
 		}
 	}
