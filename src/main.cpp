@@ -31,7 +31,7 @@ vector<Point3D> all_points;
 Point3D view_point,watch_direction;
 
 // theta = zy plane angle, phi = zx plane angle from z
-float watch_theta = -0.33, watch_phi = 2.04, turning_speed = 0, std_turning_speed = 0.02;
+float watch_theta = -13, watch_phi = 374, turning_speed = 0, std_turning_speed = 0.02;
 Ray view_ray,up;
 Frame view_window;
 vector<vector<Point3D>> intersected_points;
@@ -160,8 +160,11 @@ void text_overlay() {
 
 void init_world_rules()
 {
+	watch_theta = (watch_theta * PI)/180;
+	watch_phi = (watch_phi * PI) / 180;
+
 	// viewing position
-	view_point = Point3D( -5,2,2.6);
+	view_point = Point3D( -13, 8, -26);
 	view_ray = Ray(view_point, view_point + Point3D(watch_theta, watch_phi));
 	view_ray.unitize();
 	view_ray.p1 = view_ray.p1 + view_point;
@@ -173,7 +176,7 @@ void init_world_rules()
 
 	// light
 	light_sources = {
-		LightSource(Point3D(-1.75,1.2,-2), 0.6),
+		LightSource(Point3D(-1.75,10,-2), 0.6),
 	};
 	ambient_light = 0.4;
 }
@@ -197,7 +200,7 @@ void set_objects(vector<Object> &objv ) {
 	// objv.push_back(Object().readObject("src\\Objects\\shoe.obj"));
 	Object teapot = Object().readObject("src\\Objects\\teapot_clr.obj").rotate(0, 0);
 	teapot.concave_object = true;
-	Object torus = Object().readObject("src\\Objects\\torus.obj").rotate(-PI / 3, -PI / 4).scale(4.2).move(Point3D(-15, 0, 0));
+	Object torus = Object().readObject("src\\Objects\\torus.obj").rotate(-PI / 3, -PI / 3).scale(4.2).move(Point3D(-15, 0, 0));
 	torus.concave_object = true;
 	Object cone = Object().readObject("src\\Objects\\cone.obj").scale(100).rotate(-PI / 2,0);
 	cone.concave_object = true;
@@ -210,11 +213,11 @@ void set_objects(vector<Object> &objv ) {
 	// cout << "size -- " << land.size() << endl;
 	// torus.move(Point3D(0,0,-4));
 	// objv.push_back(cube);
-	// objv.push_back(sphere_s_r);
+	objv.push_back(sphere_s_r);
 	// objv.push_back(teapot);
-	// objv.push_back(torus);
+	objv.push_back(torus);
 	// objv.push_back(cone);
-	objv.push_back(timepass);
+	// objv.push_back(timepass);
 	// objv.push_back(sphere_s_r);
 	// objv.push_back(sword);
 	// for (auto&m_obj_i:land){
