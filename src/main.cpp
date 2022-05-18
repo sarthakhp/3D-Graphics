@@ -31,7 +31,7 @@ vector<Point3D> all_points;
 Point3D view_point,watch_direction;
 
 // theta = zy plane angle, phi = zx plane angle from z
-float watch_theta = -13, watch_phi = 374, turning_speed = 0, std_turning_speed = 0.02;
+float watch_theta = -10, watch_phi = 295, turning_speed = 0, std_turning_speed = 0.02;
 Ray view_ray,up;
 Frame view_window;
 vector<vector<Point3D>> intersected_points;
@@ -164,7 +164,7 @@ void init_world_rules()
 	watch_phi = (watch_phi * PI) / 180;
 
 	// viewing position
-	view_point = Point3D( -13, 8, -26);
+	view_point = Point3D( 17, 4, -10);
 	view_ray = Ray(view_point, view_point + Point3D(watch_theta, watch_phi));
 	view_ray.unitize();
 	view_ray.p1 = view_ray.p1 + view_point;
@@ -335,8 +335,8 @@ void process_projection_using_normal(vector<Object> obj_vector, vector<vector<fl
 				intensities.push_back(obj_2d[obji].vertex_intensity[obj_2d[obji].polygons[pi][si]]);
 			}
 
-			// border_fill_direct_to_screen(points_tmp, RGBcolor(255), sm, intensities);
-			row_fill_direct_to_screen(points_tmp, obj_2d[obji].colors[pi], sm, intensities);
+			border_fill_direct_to_screen(points_tmp, RGBcolor(255), sm, intensities);
+			row_fill_direct_to_screen(points_tmp, RGBcolor(0), sm, intensities);
 		}
 	}
 
