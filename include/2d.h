@@ -152,4 +152,5 @@ vector<vector<Point>> row_fill(vector<Point> polygon_points, RGBcolor fill_color
 
 void row_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color, Screen_memory &temp_sm, vector<float> intensities);
 
+void border_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color, Screen_memory &temp_sm, vector<float> vti);
 // end

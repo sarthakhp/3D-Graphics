@@ -1076,4 +1076,14 @@ void row_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color
 	}
 }
 
+void border_fill_direct_to_screen(vector<Point> polygon_points, RGBcolor fill_color, Screen_memory &temp_sm, vector<float> vti)
+{
+	Point start_p, end_p, next_p;
+	for (int i = 0; i < polygon_points.size(); i++)
+	{
+		start_p = polygon_points[(i - 1 + polygon_points.size()) % polygon_points.size()];
+		end_p = polygon_points[i];
+		mid_point_line_draw(temp_sm, start_p, end_p, RGBcolor(255), 0);
+	}
+}
 // 

@@ -96,6 +96,8 @@ Object::Object(){
     normals = vector<Point3D>(0);
     colors = vector<RGBcolor>(0);
     center = Point3D();
+    Kd = vector<vector<float>>(0, vector<float>(3));
+    Ks = vector<vector<float>>(0, vector<float>(3));
     self_luminious = false;
 }
 Object Object::clip_3d_object(Frame view_window, Point3D view_point, Ray normal){
@@ -197,7 +199,7 @@ vector<RGBcolor> Object::illumination(float ambient_light, vector< LightSource> 
 
 
         if (intensity > 1) intensity = 1;
-        if (intensity < 0) intensity = 0;
+        if (intensity < 0.2) intensity = 0.2;
         RGBcolor c_t = this->colors[index];
         ans_colors.push_back(RGBcolor((c_t.r * intensity),
                                       (c_t.g * intensity),
@@ -232,10 +234,8 @@ vector<float> Object::gouraud_shading(float ambient_light, vector< LightSource> 
             intensity += (ls.intensity * cos_theta);
         }
 
-        if (intensity > 1)
-            intensity = 1;
-        if (intensity < 0)
-            intensity = 0;
+        intensity = min (intensity, (float)1);
+        intensity = max(intensity, (float)0.1);
         ans.push_back(intensity);
         index++;
     }
@@ -276,7 +276,11 @@ Object Object::readObject(string path){
                 ss >> g;
                 ss >> b;
                 mtl_colors[ mtl_name] = RGBcolor(r*255, g*255, b*255);
+
                 mtl_name = "";
+            }
+            else if (s == "Ks"){
+
             }
         }
         int c=0;
@@ -371,6 +375,7 @@ Object Object::readObject(string path){
         this->center = this->center + pts;
     }
     this->center = Point3D(this->center.x / this->points.size(), this->center.y / this->points.size(), this->center.z / this->points.size());
+    
     return *this;
 }
 vector<Object> Object::readMultipleObject(string path){

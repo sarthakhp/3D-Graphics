@@ -31,7 +31,7 @@ vector<Point3D> all_points;
 Point3D view_point,watch_direction;
 
 // theta = zy plane angle, phi = zx plane angle from z
-float watch_theta = -PI/2, watch_phi = 0, turning_speed = 0, std_turning_speed = 0.02;
+float watch_theta = -0.33, watch_phi = 2.04, turning_speed = 0, std_turning_speed = 0.02;
 Ray view_ray,up;
 Frame view_window;
 vector<vector<Point3D>> intersected_points;
@@ -124,9 +124,7 @@ void text_overlay() {
 	show_text("Frame rate: " + to_string( (int)ceil(frame_rate)), text_slot, font_h, f);
 	text_slot.y += font_h;
 
-	//text 3
-	show_text("Angle_zy : " + to_string(round(watch_theta * (180 / PI))) + "Angle_zx : " + to_string(round(watch_phi * (180 / PI))), text_slot, font_h, f);
-	text_slot.y += font_h;
+	
 
 	//text 4
 	string stringx, stringy, stringz;
@@ -141,7 +139,11 @@ void text_overlay() {
 	stringz = ssz.str();
 
 	// show_text("view point x : " + to_string(round(view_point.x)) + " y : " + to_string(round(view_point.y)) + " z : " + to_string(round(view_point.x)), text_slot, font_h, f);
-	show_text("view point x : " + stringx + " y : " + stringy + " z : " + stringz, text_slot, font_h, f);
+	show_text("x : " + stringx + " y : " + stringy + " z : " + stringz, text_slot, font_h, f);
+	text_slot.y += font_h;
+
+	// text 3
+	show_text("Angle_zy : " + to_string((int)(watch_theta * (180 / PI))) + " Angle_zx : " + to_string((int)(watch_phi * (180 / PI))), text_slot, font_h, f);
 	text_slot.y += font_h;
 
 	// text 5
@@ -159,7 +161,7 @@ void text_overlay() {
 void init_world_rules()
 {
 	// viewing position
-	view_point = Point3D(0, 4, 0);
+	view_point = Point3D( -5,2,2.6);
 	view_ray = Ray(view_point, view_point + Point3D(watch_theta, watch_phi));
 	view_ray.unitize();
 	view_ray.p1 = view_ray.p1 + view_point;
@@ -171,7 +173,7 @@ void init_world_rules()
 
 	// light
 	light_sources = {
-		LightSource(Point3D(-1.3, 2.1, 0.93), 0.4),
+		LightSource(Point3D(-1.75,1.2,-2), 0.6),
 	};
 	ambient_light = 0.4;
 }
@@ -187,29 +189,33 @@ void set_objects(vector<Object> &objv ) {
 	// objv.push_back(newCube(2, Point3D(-6, 0, -6)));
 
 	// reading obj files
-	Object cube = Object().readObject("src\\Objects\\cube.obj").rotate(0,0);
+	Object cube = Object().readObject("src\\Objects\\cube.obj").rotate(0,0).scale(5).move(Point3D(15,0,-5));
 	// objv.push_back(Object().readObject("src\\Objects\\low-poly-sphere.obj").move(Point3D(10,100,10)));
 	Object sphere = Object().readObject("src\\Objects\\sphere.obj");
 	// objv.push_back(Object().readObject("src\\Objects\\utah-teapot.obj"));
 	// objv.push_back(Object().readObject("src\\Objects\\fox.obj"));
 	// objv.push_back(Object().readObject("src\\Objects\\shoe.obj"));
-	Object teapot = Object().readObject("src\\Objects\\utah-teapot-low-poly.obj").rotate(0, 0);
+	Object teapot = Object().readObject("src\\Objects\\teapot_clr.obj").rotate(0, 0);
 	teapot.concave_object = true;
-	Object torus = Object().readObject("src\\Objects\\torus.obj").rotate(PI/3, 0);
+	Object torus = Object().readObject("src\\Objects\\torus.obj").rotate(-PI / 3, -PI / 4).scale(4.2).move(Point3D(-15, 0, 0));
 	torus.concave_object = true;
-	Object cone = Object().readObject("src\\Objects\\cone.obj").scale(10).rotate(0 ,0);
-	cone.move_to_origin();
+	Object cone = Object().readObject("src\\Objects\\cone.obj").scale(100).rotate(-PI / 2,0);
+	cone.concave_object = true;
+	cone.move(Point3D(15, 0, 15));
 	Object sword = Object().readObject("src\\Objects\\sword.obj").scale(10);
 	Object timepass = Object().readObject("src\\Objects\\timepass.obj").rotate(0, 0);
+	timepass.concave_object = true;
+	Object sphere_s_r = Object().readObject("src\\Objects\\poly-sphere.obj").scale(5.2);
 	// vector<Object> land = Object().readMultipleObject("src\\Objects\\timepass.obj");
 	// cout << "size -- " << land.size() << endl;
 	// torus.move(Point3D(0,0,-4));
 	// objv.push_back(cube);
-	// objv.push_back(sphere);
+	// objv.push_back(sphere_s_r);
 	// objv.push_back(teapot);
 	// objv.push_back(torus);
 	// objv.push_back(cone);
 	objv.push_back(timepass);
+	// objv.push_back(sphere_s_r);
 	// objv.push_back(sword);
 	// for (auto&m_obj_i:land){
 	// 	objv.push_back(m_obj_i);
@@ -225,11 +231,15 @@ void set_objects(vector<Object> &objv ) {
 	}
 
 	// planes
-	// for (int i = -5; i < 5; i++){
-	// 	for (int j = -5; j < 5; j++){
+	// int plane_size = 1, no_of_planes_x = 30;
+	// float plane_y = -6;
+	// for (int i = -no_of_planes_x; i < no_of_planes_x; i++)
+	// {
+	// 	for (int j = -no_of_planes_x; j < no_of_planes_x; j++)
+	// 	{
 	// 		// , 0, rand() % 150 + 50
-	// 		objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, 0, j)), RGBcolor(255)));
-	// 		objv.push_back(newPlane(1, Ray(Point3D(i, -2, j), Point3D(i, -11, j)), RGBcolor(255)));
+	// 		objv.push_back(newPlane(plane_size, Ray(Point3D(i * plane_size, plane_y, j * plane_size), Point3D(i * plane_size, plane_y+1, j * plane_size)), RGBcolor(255)));
+	// 		objv.push_back(newPlane(plane_size, Ray(Point3D(i * plane_size, plane_y, j * plane_size), Point3D(i * plane_size, plane_y-1, j * plane_size)), RGBcolor(255)));
 	// 	}
 	// }
 	// for (float i = -5; i < 5; i++)
@@ -243,70 +253,6 @@ void set_objects(vector<Object> &objv ) {
 	// }
 
 	// objv.push_back(newPlane(2, Ray(Point3D(0, 1, 0), Point3D(0,2,0)), RGBcolor(255)));
-
-}
-
-void process_projection(Object obj, int index){
-	
-	// 2d object 'obj' to 2d object 'tempobj'
-	tempobj.center = find_intersection(view_window, Ray(view_point, obj.center)).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT);
-	tempobj.edges = obj.edges;
-	tempobj.polygons = obj.polygons;
-	tempobj.colors = obj.colors;
-	tempobj.points = vector<Point>(0);
-	for (int i = 0; i < obj.points.size(); i++){
-		tempobj.points.push_back( find_intersection(view_window, Ray(view_point, obj.points[i] )).to_2d(view_window.p1, view_window.p2, view_window.p4, MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT) );
-	}
-	
-	// seeing if first calculate or recalculate
-	if (obj_2d.size() == objs.size()){
-		obj_2d[index] = tempobj;
-	}
-	else{
-		obj_2d.push_back(tempobj);
-	}
-	
-	vector<Point> points_tmp;
-	// comparing distance and writing to sm (screen memory)
-	for (int obji = 0; obji < obj_2d.size(); obji++)
-	{
-		// for each 2d object: 
-		for (int pi = 0; pi < obj_2d[obji].polygons.size(); pi++)
-		{ 
-			// for each polygon in the 2d object: 
-			
-			fill_points = vector<vector<Point>>(0);
-
-			// lists of points for filling the 2d polygon (can't pass direct polygon as it has point index instead of actual points)
-			points_tmp = vector<Point>(0);
-
-			for (int si = 0; si < obj_2d[obji].polygons[pi].size(); si++)
-			{
-				// for each point 
-
-				// inserting all points of edge  
-				fill_points.push_back(
-				 mid_point_line_draw_c(sm, obj_2d[obji].points[obj_2d[obji].polygons[pi][si]],
-									  obj_2d[obji].points[obj_2d[obji].polygons[pi][(si + 1) % obj_2d[obji].polygons[pi].size()]],
-									  obj_2d[obji].colors[pi], 0, temp_sm) 
-				);
-				points_tmp.push_back(obj_2d[obji].points[obj_2d[obji].polygons[pi][si]]);
-			}
-
-			if (objs[obji].normals[pi].dot_product(view_ray.p2 - view_ray.p1) < 0){
-				points_to_pixel(fill_points, view_point, view_window, objs[obji], pi, sm, distance_memory);
-				fill_points = row_fill(points_tmp, obj_2d[obji].colors[pi], temp_sm);
-				points_to_pixel(fill_points, view_point, view_window, objs[obji], pi, sm, distance_memory);
-			}
-			// SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0XFF);
-			// SDL_RenderClear(renderer);
-			// temp_sm.renderer(renderer);
-			// SDL_RenderPresent(renderer);
-			// int j;
-			// cin >> j;
-			temp_sm = init_sm;
-		}
-	}
 
 }
 
@@ -385,6 +331,7 @@ void process_projection_using_normal(vector<Object> obj_vector, vector<vector<fl
 				intensities.push_back(obj_2d[obji].vertex_intensity[obj_2d[obji].polygons[pi][si]]);
 			}
 
+			// border_fill_direct_to_screen(points_tmp, RGBcolor(255), sm, intensities);
 			row_fill_direct_to_screen(points_tmp, obj_2d[obji].colors[pi], sm, intensities);
 		}
 	}
@@ -628,8 +575,6 @@ int main(int argv, char** args){
 
 	return 0;
 }
-
-
 
 
 

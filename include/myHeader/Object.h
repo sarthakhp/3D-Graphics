@@ -42,6 +42,7 @@ public:
 
     // colors
     vector<RGBcolor> colors;
+    vector<vector<float>> Kd, Ks;
 
     Point3D center;
 
