@@ -267,7 +267,7 @@ void process_projection_using_normal(vector<Object> obj_vector, vector<vector<fl
 		Object o = obj_vector[i_obj[1]].clip_3d_object(view_window, view_point, view_ray);
 		obj_2d[index] = o.object_to_2d(view_window, view_point, view_ray);
 		// obj_2d[index].colors = o.illumination(ambient_light, light_sources);
-		obj_2d[index].vertex_intensity = o.gouraud_shading(ambient_light, light_sources);
+		// obj_2d[index].vertex_intensity = o.gouraud_shading(ambient_light, light_sources);
 		obj_3d_clipped.push_back(o);
 		index++;
 	}	
