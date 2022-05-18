@@ -176,7 +176,8 @@ void init_world_rules()
 
 	// light
 	light_sources = {
-		LightSource(Point3D(-1.75,10,-2), 0.6),
+		LightSource(Point3D(-1.75, 10, -2), 0.6),
+		LightSource(Point3D(-1.75, -10, -2), 0.6),
 	};
 	ambient_light = 0.4;
 }

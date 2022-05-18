@@ -224,14 +224,15 @@ vector<float> Object::gouraud_shading(float ambient_light, vector< LightSource> 
         {
             light_to_poly = (ls.p - this->points[index]);
             cos_theta = ni.unitize().dot_product(light_to_poly.unitize());
-            // if (cos_theta <= 0)
-            // {
-            //     cos_theta = 0;
-            // }
+            if (cos_theta <= 0)
+            {
+                cos_theta = 0;
+            }
 
             // formula for fading of intensity accourding to distance of light source
             closeness = 1 / (1 + pow((light_to_poly.len() / 10), 2));
             intensity += (ls.intensity * cos_theta);
+            intensity = max(intensity, (float)0.1);
         }
 
         intensity = min (intensity, (float)1);
