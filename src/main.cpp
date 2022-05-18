@@ -303,19 +303,13 @@ void process_projection_using_normal(vector<Object> obj_vector, vector<vector<fl
 
 			Point3D polygon_to_viewpoint = view_point - obj_3d_clipped[obji].points[obj_3d_clipped[obji].polygons[pi][0]];
 			// if polygon not facing us, skip
-			if (obj_3d_clipped[obji].normals[pi].dot_product(polygon_to_viewpoint) < 0)
-			{
-				continue;
-			}
+			
 
 			// calculate distance between polygon to viewpoint
 			polygon_distance.push_back({(polygon_to_viewpoint).len(), (float) pi});
 		}
 
-		if (objs[obj_3d_i].concave_object){
-			sort(polygon_distance.begin(), polygon_distance.end());
-			reverse(polygon_distance.begin(), polygon_distance.end());
-		}
+		
 
 		int pi;
 		for (int spi = 0; spi < polygon_distance.size(); spi++)
@@ -374,8 +368,8 @@ void recalculate()
 	for (int i = 0; i < objs.size(); i++){
 		object_order.push_back({(objs[i].center - view_point).len(), (float)i});
 	}
-	sort(object_order.begin(), object_order.end());
-	reverse(object_order.begin(), object_order.end());
+	// sort(object_order.begin(), object_order.end());
+	// reverse(object_order.begin(), object_order.end());
 
 	long long t1 = SDL_GetTicks64();
 	process_projection_using_normal(objs, object_order);
